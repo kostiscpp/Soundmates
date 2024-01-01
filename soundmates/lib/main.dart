@@ -60,12 +60,16 @@ class _MyHomePageState extends State<MyHomePage> {
     switch (selectedIndex) {
       case 0:
         page = SwipePage();
+        break;
       case 1:
         page = LikedPage();
+        break;
       case 2:
         page = MatchesPage();
+        break;
       case 3:
         page = ProfilePage();
+        break;
       default:
         throw UnimplementedError('no widget for $selectedIndex');
     }
@@ -113,17 +117,31 @@ class _MyHomePageState extends State<MyHomePage> {
 class SwipePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text('Swipeeee'),
-    );
+    return PhotoWidget();
   }
 }
 
 class LikedPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text('Liked'),
+    return SingleChildScrollView(
+      child: Column(children: [
+        Padding(
+            padding: EdgeInsets.fromLTRB(8, 0, 0, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Liked You:',
+                  style: TextStyle(
+                    fontFamily: 'Roboto',
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  )),
+            )),
+        MatchBox(),
+        MatchBox(),
+        MatchBox(),
+      ]),
     );
   }
 }
@@ -131,17 +149,101 @@ class LikedPage extends StatelessWidget {
 class MatchesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text('Matches'),
+    return SingleChildScrollView(
+      child: Column(children: [
+        Padding(
+            padding: EdgeInsets.fromLTRB(8, 0, 0, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Matches',
+                  style: TextStyle(
+                    fontFamily: 'Roboto',
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  )),
+            )),
+        NewMatchBox(),
+        MatchBox(),
+        MatchBox(),
+        MatchBox(),
+        MatchBox(),
+        MatchBox(),
+        MatchBox(),
+        MatchBox(),
+      ]),
     );
   }
 }
 
 class ProfilePage extends StatelessWidget {
+  final List<Pair<String, String>> myinfo = [
+    Pair('This is a test',
+        "This is some longer text to see what happens. The test of course continues"),
+    Pair('This is the second box',
+        "This is some longer text to see what happens. The test of course continues"),
+  ];
+
+  // void showMyDialog(BuildContext context) {
+  //   showDialog(
+  //     context: context,
+  //     builder: (BuildContext context) {
+  //       return Container(
+  //         height: 300,
+  //         width: MediaQuery.of(context).size.width * 0.8,
+  //         decoration: BoxDecoration(
+  //           borderRadius: BorderRadius.circular(30),
+  //           border: Border.all(
+  //             color: Theme.of(context).colorScheme.primary,
+  //             width: 2.0,
+  //           ),
+  //           color: Theme.of(context).colorScheme.background,
+  //           child: Column(
+  //             children: [
+  //               Padding(
+  //                 padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
+
+  //               )
+  //             ]
+  //           )
+
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
+
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text('Profile'),
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          ProfileTopBox(),
+          ProfilePicturesBox(),
+          Align(
+            alignment: Alignment.topRight,
+            child: ElevatedButton(
+              onPressed: () {}, //=> showMyDialog(context),
+              style: ElevatedButton.styleFrom(
+                shape: CircleBorder(),
+                backgroundColor: Theme.of(context).colorScheme.surface,
+              ),
+              child: Icon(Icons.add),
+            ),
+          ),
+          Column(
+            children: myinfo
+                .map((pair) => Infobox(title: pair.first, content: pair.second))
+                .toList(),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // Manage Socials button action
+            },
+            child: Text('Manage Socials'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -162,4 +264,593 @@ class AppBarWidget extends StatelessWidget {
       ),
     );
   }
+}
+
+class PhotoWidget extends StatefulWidget {
+  @override
+  State<PhotoWidget> createState() => _PhotoWidgetState();
+}
+
+class _PhotoWidgetState extends State<PhotoWidget> {
+  final int currentPhotoIndex = 1;
+  final int totalPhotos = 5;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(10, 8, 10, 20),
+      child: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20), // Rounded corners
+              image: DecorationImage(
+                image: AssetImage('assets/images/dalle.png'),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.center,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, Colors.black.withOpacity(1)],
+              ),
+            ),
+          ),
+
+          Positioned(
+            top: 10,
+            left: 0,
+            right: 0,
+            child: PhotoIndicator(
+              totalPhotos: totalPhotos,
+              currentPhoto: currentPhotoIndex,
+            ),
+          ),
+
+          // Left part - Previous Photo
+          Positioned.fill(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: GestureDetector(
+                onTap: () {
+                  // Logic to go to previous photo
+                },
+                child: Container(
+                  color: Colors.red.withOpacity(0.2), // Semi-transparent
+                  width: MediaQuery.of(context).size.width * 0.3, // Half width
+                ),
+              ),
+            ),
+          ),
+          // Right part - Next Photo
+          Positioned.fill(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                onTap: () {
+                  // Logic to go to next photo
+                },
+                child: Container(
+                  color: Colors.red.withOpacity(0.2), // Semi-transparent
+                  width: MediaQuery.of(context).size.width * 0.3, // Half width
+                ),
+              ),
+            ),
+          ),
+
+          Positioned(
+            left: 10,
+            top: 480, // Change alignment to top center
+            child: Text(
+              'Laurel 19',
+              style: TextStyle(
+                fontFamily: 'Roboto',
+                fontSize: 40,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          Positioned(
+              left: 10,
+              top: 530,
+              child: Text(
+                '6km',
+                style: TextStyle(
+                  fontFamily: 'Roboto',
+                  fontSize: 16,
+                  color: Colors.white,
+                ),
+              )),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              padding: EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Button 1 action
+                      },
+                      child: Text('Reload'),
+                    ),
+                  ),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Button 2 action
+                      },
+                      child: Text('Reject'),
+                    ),
+                  ),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Button 3 action
+                      },
+                      child: Text('Like'),
+                    ),
+                  ),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Button 4 action
+                      },
+                      child: Text('SuperLike'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          Positioned(
+            right: 30,
+            top: 480,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => MoreInfoPage(
+                          name: 'Laurel',
+                          age: 19,
+                          job: 'National Academy of Dance',
+                          distance: '6km')),
+                );
+              },
+              child: Text('More Info'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class PhotoIndicator extends StatelessWidget {
+  final int totalPhotos;
+  final int currentPhoto;
+
+  PhotoIndicator({required this.totalPhotos, required this.currentPhoto});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(totalPhotos, (index) {
+        return Container(
+          width: 300.0 / totalPhotos,
+          height: 6.0,
+          margin: EdgeInsets.symmetric(horizontal: 2.0),
+          decoration: BoxDecoration(
+            color: index == currentPhoto
+                ? Theme.of(context).colorScheme.primary
+                : Colors.grey,
+            borderRadius: BorderRadius.circular(2.0),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class MatchBox extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+        height: 80,
+        child: Row(children: [
+          Container(
+            height: 80,
+            width: 80,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(40), // Rounded corners
+              image: DecorationImage(
+                image: AssetImage('assets/images/dalle.png'),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.white,
+                    width: 1.0,
+                  ),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Laurel 19',
+                      style: TextStyle(
+                        fontFamily: 'Roboto',
+                        fontSize: 30,
+                        color: Colors.white,
+                      )),
+                ),
+              ),
+            ),
+          ),
+        ]));
+  }
+}
+
+class NewMatchBox extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+        height: 80,
+        child: Row(children: [
+          Container(
+            height: 80,
+            width: 80,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(40), // Rounded corners
+              image: DecorationImage(
+                image: AssetImage('assets/images/dalle.png'),
+                fit: BoxFit.cover,
+              ),
+            ),
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Container(
+                height: 20,
+                width: 20,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10), // Rounded corners
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.white,
+                    width: 1.0,
+                  ),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Laurel 19',
+                      style: TextStyle(
+                        fontFamily: 'Roboto',
+                        fontSize: 30,
+                        color: Colors.white,
+                      )),
+                ),
+              ),
+            ),
+          ),
+        ]));
+  }
+}
+
+class ProfileTopBox extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 5, 5, 10),
+      child: SizedBox(
+          height: 80,
+          child: Column(children: [
+            Text('Name, Age',
+                style: TextStyle(
+                  fontFamily: 'Roboto',
+                  fontSize: 30,
+                  color: Colors.white,
+                )),
+            Text('Job Title/School',
+                style: TextStyle(
+                  fontFamily: 'Roboto',
+                  fontSize: 20,
+                  color: Colors.white,
+                )),
+          ])),
+    );
+  }
+}
+
+class ProfilePicturesBox extends StatelessWidget {
+  final List<String> pictures = [
+    'assets/images/dalle.png',
+    'assets/images/dalle.png'
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+        width: MediaQuery.of(context).size.width,
+        height: 372,
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(
+              color: Colors.white,
+              width: 1.0,
+            ),
+            bottom: BorderSide(
+              color: Colors.white,
+              width: 1.0,
+            ),
+          ),
+        ),
+        child: Column(children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(0, 5, 0, 0),
+            child: Row(
+              children: [
+                ProfilePic(pictures: pictures, currentindex: 0),
+                ProfilePic(pictures: pictures, currentindex: 1),
+                ProfilePic(pictures: pictures, currentindex: 2),
+              ],
+            ),
+          ),
+          Row(
+            children: [
+              ProfilePic(pictures: pictures, currentindex: 3),
+              ProfilePic(pictures: pictures, currentindex: 4),
+              ProfilePic(pictures: pictures, currentindex: 5),
+            ],
+          ),
+        ]));
+  }
+}
+
+class ProfilePic extends StatelessWidget {
+  final List<String> pictures;
+  final int currentindex;
+
+  ProfilePic({required this.pictures, required this.currentindex});
+
+  @override
+  Widget build(BuildContext context) {
+    if (pictures.length - currentindex - 1 < -1) {
+      print('hello $currentindex');
+      return Expanded(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
+          child: Container(
+            width: 100,
+            height: 170,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              color: Colors.grey,
+            ),
+          ),
+        ),
+      );
+    } else if (pictures.length - currentindex - 1 == -1) {
+      print('stop $currentindex');
+      return Expanded(
+        child: Padding(
+            padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
+            child: Container(
+              width: 100,
+              height: 170,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                image: DecorationImage(
+                  image: AssetImage(
+                      'assets/images/addimage.png'), // Local asset image
+                  fit: BoxFit.cover,
+                ),
+              ),
+            )),
+      );
+    } else {
+      print('bye $currentindex');
+      return Expanded(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
+          child: Container(
+            width: 100,
+            height: 170,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10), // Rounded corners
+              image: DecorationImage(
+                image: AssetImage(
+                    pictures[currentindex]), // Replace with your network image
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+  }
+}
+
+class Infobox extends StatelessWidget {
+  final String title;
+  final String content;
+
+  Infobox({required this.title, required this.content});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
+      child: Container(
+          decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              color: Theme.of(context).colorScheme.surface),
+          child: Padding(
+              padding: EdgeInsets.fromLTRB(10, 5, 10, 10),
+              child: Column(
+                children: [
+                  Container(
+                      width: MediaQuery.of(context).size.width,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: Colors.white,
+                            width: 1.0,
+                          ),
+                        ),
+                      ),
+                      child: Text(title,
+                          style: TextStyle(
+                            fontFamily: 'Roboto',
+                            fontSize: 20,
+                            color: Colors.white,
+                          ))),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width,
+                    child: Text(content,
+                        style: TextStyle(
+                          fontFamily: 'Roboto',
+                          fontSize: 16,
+                          color: Colors.white,
+                        )),
+                  ),
+                ],
+              ))),
+    );
+  }
+}
+
+class MoreInfoPage extends StatefulWidget {
+  final String name;
+  final int age;
+  final String job;
+  final String distance;
+
+  MoreInfoPage(
+      {required this.name,
+      required this.age,
+      required this.job,
+      required this.distance});
+
+  @override
+  State<MoreInfoPage> createState() => _MoreInfoPageState();
+}
+
+class _MoreInfoPageState extends State<MoreInfoPage> {
+  var selectedIndex = 0;
+
+  final List<Pair<String, String>> info = [
+    Pair('What I\'m looking for', 'Something serious, but open for casual'),
+    Pair('My Favourite Band', 'My Chemical Romance'),
+    Pair('My Hobbies', 'Singing\nDancing\nKick Boxing\nCrossfit'),
+    Pair('Song stuck in my head', 'Cigarette Daydreams\n-Cage the Elephant'),
+    Pair('An interesting fact about me',
+        'I discovered I am afraid of heights on my 18th birthday when I went skydiving'),
+    Pair('My green flag', 'We can spar together'),
+    Pair('My red flag', 'I’ll win'),
+    Pair('Swipe left if', 'You don’t like dogs'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        body: SingleChildScrollView(
+            child: Column(children: [
+      Container(
+        height: MediaQuery.of(context).size.height * 0.5,
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/dalle.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+      Container(
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: Colors.white,
+              width: 1.0,
+            ),
+          ),
+        ),
+        child: Row(children: [
+          SizedBox(
+            width: MediaQuery.of(context).size.width * 0.8,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 0, 0, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("${widget.name} ${widget.age}",
+                      style: TextStyle(
+                        fontFamily: 'Roboto',
+                        fontSize: 30,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.left),
+                  Text(widget.job,
+                      style: TextStyle(
+                        fontFamily: 'Roboto',
+                        fontSize: 20,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.left),
+                  Text(widget.distance,
+                      style: TextStyle(
+                        fontFamily: 'Roboto',
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.left),
+                ],
+              ),
+            ),
+          ),
+          ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context,
+                    MaterialPageRoute(builder: (context) => MyHomePage()));
+              },
+              child: Icon(Icons.arrow_downward))
+        ]),
+      ),
+      Column(
+        children: info
+            .map((pair) => Infobox(title: pair.first, content: pair.second))
+            .toList(),
+      ),
+    ])));
+  }
+}
+
+class Pair<T, U> {
+  final T first;
+  final U second;
+
+  Pair(this.first, this.second);
 }
