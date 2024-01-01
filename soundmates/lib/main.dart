@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'colors.dart';
 
@@ -184,34 +185,23 @@ class ProfilePage extends StatelessWidget {
         "This is some longer text to see what happens. The test of course continues"),
   ];
 
-  // void showMyDialog(BuildContext context) {
-  //   showDialog(
-  //     context: context,
-  //     builder: (BuildContext context) {
-  //       return Container(
-  //         height: 300,
-  //         width: MediaQuery.of(context).size.width * 0.8,
-  //         decoration: BoxDecoration(
-  //           borderRadius: BorderRadius.circular(30),
-  //           border: Border.all(
-  //             color: Theme.of(context).colorScheme.primary,
-  //             width: 2.0,
-  //           ),
-  //           color: Theme.of(context).colorScheme.background,
-  //           child: Column(
-  //             children: [
-  //               Padding(
-  //                 padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
+  void showBoxPopup(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CustomBoxDialog();
+      },
+    );
+  }
 
-  //               )
-  //             ]
-  //           )
-
-  //         ),
-  //       );
-  //     },
-  //   );
-  // }
+  void showSocialPopup(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CustomSocialDialog();
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -223,7 +213,7 @@ class ProfilePage extends StatelessWidget {
           Align(
             alignment: Alignment.topRight,
             child: ElevatedButton(
-              onPressed: () {}, //=> showMyDialog(context),
+              onPressed: () => showBoxPopup(context),
               style: ElevatedButton.styleFrom(
                 shape: CircleBorder(),
                 backgroundColor: Theme.of(context).colorScheme.surface,
@@ -237,9 +227,7 @@ class ProfilePage extends StatelessWidget {
                 .toList(),
           ),
           ElevatedButton(
-            onPressed: () {
-              // Manage Socials button action
-            },
+            onPressed: () => showSocialPopup(context),
             child: Text('Manage Socials'),
           ),
         ],
@@ -853,4 +841,322 @@ class Pair<T, U> {
   final U second;
 
   Pair(this.first, this.second);
+}
+
+class CustomBoxDialog extends StatefulWidget {
+  @override
+  State<CustomBoxDialog> createState() => _CustomBoxDialogState();
+}
+
+class _CustomBoxDialogState extends State<CustomBoxDialog> {
+  String userTitle = '';
+  String userContent = '';
+  TextEditingController textController1 = TextEditingController();
+  TextEditingController textController2 = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+            width: MediaQuery.of(context).size.width * 0.8,
+            height: 150,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary,
+                width: 1.0,
+              ),
+              color: Theme.of(context).colorScheme.background,
+            ),
+            child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
+                      child: Container(
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              color: Theme.of(context).colorScheme.surface),
+                          child: Padding(
+                              padding: EdgeInsets.fromLTRB(10, 5, 10, 10),
+                              child: Column(
+                                children: [
+                                  Container(
+                                      width: MediaQuery.of(context).size.width,
+                                      decoration: BoxDecoration(
+                                        border: Border(
+                                          bottom: BorderSide(
+                                            color: Colors.white,
+                                            width: 1.0,
+                                          ),
+                                        ),
+                                      ),
+                                      child: TextField(
+                                        controller: textController1,
+                                        decoration: InputDecoration(
+                                          hintText: "Title",
+                                          hintStyle: TextStyle(
+                                              color: Colors.white,
+                                              fontFamily: 'Roboto',
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.normal),
+                                          contentPadding: EdgeInsets.all(0),
+                                          isDense: true,
+                                        ),
+                                        style: TextStyle(
+                                          fontFamily: 'Roboto',
+                                          fontSize: 20,
+                                          color: Colors.white,
+                                        ),
+                                      )),
+                                  SizedBox(
+                                    width: MediaQuery.of(context).size.width,
+                                    child: TextField(
+                                      controller: textController2,
+                                      decoration: InputDecoration(
+                                          border: InputBorder.none,
+                                          hintText:
+                                              "Tell us something about you!!!",
+                                          hintStyle: TextStyle(
+                                            color: Colors.white,
+                                            fontFamily: 'Roboto',
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.normal,
+                                          ),
+                                          contentPadding: EdgeInsets.all(0),
+                                          isDense: true),
+                                      style: TextStyle(
+                                        fontFamily: 'Roboto',
+                                        fontSize: 16,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ))),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(0, 0, 5, 0),
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => SuggestionPanel()));
+                            },
+                            child: Text('Suggest'),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(5, 0, 0, 0),
+                          child: ElevatedButton(
+                            onPressed: () {
+                              // Button 2 action
+                            },
+                            child: Text('Add Box'),
+                          ),
+                        )
+                      ],
+                    )
+                  ],
+                ))));
+  }
+}
+
+class SuggestionPanel extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        body: Column(children: [
+      AppBarWidget(),
+      Padding(
+          padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                SizedBox(
+                  width: MediaQuery.of(context).size.width,
+                  child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => MyHomePage()));
+                          },
+                          child: Text('Back'))),
+                ),
+                TipBox(
+                    tip:
+                        'Introducing yourself can be scary! But don’t be discouraged, we’re here to help you! How about we keep it simple? Here are some suggestions!'),
+                SuggestionBox(title: 'What I\'m looking for'),
+                SuggestionBox(title: 'My Favourite Band'),
+                SuggestionBox(title: 'My Hobbies'),
+                SuggestionBox(title: 'Song stuck in my head'),
+                SuggestionBox(title: 'Interesting fact'),
+                SuggestionBox(title: 'Green/Red flag'),
+                SuggestionBox(title: 'Swipe right/left if')
+              ],
+            ),
+          ))
+    ]));
+  }
+}
+
+class TipBox extends StatelessWidget {
+  final String tip;
+  TipBox({required this.tip});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+        decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: Theme.of(context).colorScheme.tertiary),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            children: [
+              Text(
+                'Tip',
+                style: TextStyle(
+                  fontFamily: 'Roboto',
+                  fontSize: 20,
+                  fontWeight: FontWeight.normal,
+                  color: Colors.black,
+                ),
+              ),
+              Text(
+                tip,
+                style: TextStyle(
+                  fontFamily: 'Roboto',
+                  fontSize: 16,
+                  fontWeight: FontWeight.normal,
+                  color: Colors.black,
+                ),
+              )
+            ],
+          ),
+        ));
+  }
+}
+
+class SuggestionBox extends StatelessWidget {
+  final String title;
+  SuggestionBox({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+        padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
+        child: Container(
+            width: MediaQuery.of(context).size.width,
+            decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.tertiary,
+                  width: 1.0,
+                ),
+                color: Theme.of(context).colorScheme.surface),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontFamily: 'Roboto',
+                  fontSize: 24,
+                  fontWeight: FontWeight.normal,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.left,
+              ),
+            )));
+  }
+}
+
+class CustomSocialDialog extends StatefulWidget {
+  @override
+  State<CustomSocialDialog> createState() => _CustomSocialDialogState();
+}
+
+class _CustomSocialDialogState extends State<CustomSocialDialog> {
+  String socials = '';
+  TextEditingController textController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        backgroundColor:
+            Colors.transparent, // Set the background color to transparent
+
+        child: Container(
+            height: 300,
+            width: MediaQuery.of(context).size.width * 0.8,
+            decoration: BoxDecoration(color: Colors.transparent),
+            child: Column(
+              children: [
+                TipBox(
+                    tip:
+                        'This is where your Matches will reach you. If you change your mind you can always change it later!'),
+                Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.primary,
+                            width: 1.0,
+                          ),
+                          color: Theme.of(context).colorScheme.background),
+                      child: Padding(
+                          padding: const EdgeInsets.all(10),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 100,
+                                height: 130,
+                                decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    image: DecorationImage(
+                                        image: AssetImage(
+                                            'assets/images/dalle.png'),
+                                        fit: BoxFit.cover)),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(10, 0, 0, 0),
+                                child: SizedBox(
+                                  width: 150,
+                                  child: TextField(
+                                    controller: textController,
+                                    decoration: InputDecoration(
+                                      hintText: 'Add your socials here!',
+                                      hintStyle: TextStyle(
+                                        color: Colors.white,
+                                        fontFamily: 'Roboto',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.normal,
+                                      ),
+                                      contentPadding: EdgeInsets.all(
+                                          0), // Adjust the vertical padding as needed
+                                      isDense: true,
+                                    ),
+                                    maxLines:
+                                        null, // Use as many lines as needed
+                                  ),
+                                ),
+                              )
+                            ],
+                          )),
+                    ))
+              ],
+            )));
+  }
 }
