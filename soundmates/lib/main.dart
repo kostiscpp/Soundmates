@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'colors.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
 
 void main() {
   runApp(MyApp());
@@ -229,6 +230,16 @@ class ProfilePage extends StatelessWidget {
           ElevatedButton(
             onPressed: () => showSocialPopup(context),
             child: Text('Manage Socials'),
+          ),
+          // This is a temporary button for testing
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => IndexPage()),
+              );
+            },
+            child: Text('Go to index'),
           ),
         ],
       ),
@@ -1093,70 +1104,603 @@ class _CustomSocialDialogState extends State<CustomSocialDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        backgroundColor:
-            Colors.transparent, // Set the background color to transparent
-
-        child: Container(
-            height: 300,
-            width: MediaQuery.of(context).size.width * 0.8,
-            decoration: BoxDecoration(color: Colors.transparent),
-            child: Column(
-              children: [
-                TipBox(
-                    tip:
-                        'This is where your Matches will reach you. If you change your mind you can always change it later!'),
-                Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
-                    child: Container(
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: Theme.of(context).colorScheme.primary,
-                            width: 1.0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      backgroundColor: Colors.transparent,
+      child: Container(
+        height: 300,
+        width: MediaQuery.of(context).size.width * 0.8,
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          children: [
+            TipBox(
+                tip:
+                    'This is where your Matches will reach you. If you change your mind you can always change it later!'),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 1.0,
+                  ),
+                  color: Theme.of(context).colorScheme.background,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 4, // 30% of space
+                        child: Container(
+                          height: 150,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            image: DecorationImage(
+                              image: AssetImage('assets/images/dalle.png'),
+                              fit: BoxFit.cover,
+                            ),
                           ),
-                          color: Theme.of(context).colorScheme.background),
-                      child: Padding(
-                          padding: const EdgeInsets.all(10),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 100,
-                                height: 130,
-                                decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(10),
-                                    image: DecorationImage(
-                                        image: AssetImage(
-                                            'assets/images/dalle.png'),
-                                        fit: BoxFit.cover)),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 6, // 70% of space
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
+                          child: TextField(
+                            controller: textController,
+                            decoration: InputDecoration(
+                              hintText: 'Add your socials here!',
+                              hintStyle: TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'Roboto',
+                                fontSize: 16,
+                                fontWeight: FontWeight.normal,
                               ),
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(10, 0, 0, 0),
-                                child: SizedBox(
-                                  width: 150,
-                                  child: TextField(
-                                    controller: textController,
-                                    decoration: InputDecoration(
-                                      hintText: 'Add your socials here!',
-                                      hintStyle: TextStyle(
-                                        color: Colors.white,
-                                        fontFamily: 'Roboto',
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.normal,
-                                      ),
-                                      contentPadding: EdgeInsets.all(
-                                          0), // Adjust the vertical padding as needed
-                                      isDense: true,
-                                    ),
-                                    maxLines:
-                                        null, // Use as many lines as needed
-                                  ),
-                                ),
-                              )
-                            ],
-                          )),
-                    ))
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.all(0),
+                              isDense: true,
+                            ),
+                            maxLines: 5,
+                            style: TextStyle(
+                              fontFamily: 'Roboto',
+                              fontSize: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class IndexPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Soundmates'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => SignUpPage()),
+                );
+              },
+              child: Text('Sign Up'),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => LoginPage()),
+                );
+              },
+              child: Text('Login'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SignUpPage extends StatelessWidget {
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController ageController = TextEditingController();
+  final TextEditingController genderController = TextEditingController();
+  final TextEditingController preferredGenderController =
+      TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    try {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('Sign Up'),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+        ),
+        body: Container(
+          margin: EdgeInsets.symmetric(
+              horizontal: 20), // Add left and right margins
+          child: Column(
+            mainAxisAlignment:
+                MainAxisAlignment.start, // Align content to the top
+            children: [
+              SizedBox(
+                  height: 100,
+                  width: MediaQuery.of(context).size.width,
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: Text('Soundmates',
+                        style: TextStyle(
+                          fontFamily: 'Basic',
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        )),
+                  )),
+              TextField(
+                controller: usernameController,
+                decoration: InputDecoration(
+                  hintText: 'Username',
+                ),
+              ),
+              SizedBox(height: 20),
+              TextField(
+                controller: passwordController,
+                decoration: InputDecoration(
+                  hintText: 'Password',
+                ),
+              ),
+              SizedBox(height: 20),
+              TextField(
+                controller: emailController,
+                decoration: InputDecoration(
+                  hintText: 'Email',
+                ),
+              ),
+              SizedBox(height: 20),
+              TextField(
+                controller: ageController,
+                decoration: InputDecoration(
+                  hintText: 'Age',
+                ),
+              ),
+              SizedBox(height: 20),
+              TextField(
+                controller: genderController,
+                decoration: InputDecoration(
+                  hintText: 'Gender',
+                ),
+              ),
+              SizedBox(height: 20),
+              TextField(
+                controller: preferredGenderController,
+                decoration: InputDecoration(
+                  hintText: 'Preferred Gender',
+                ),
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  print('got this far');
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (context) => GenreSelect()));
+                  print('Somehow got here?');
+                },
+                child: Text('Sign Up'),
+              ),
+            ],
+          ),
+        ),
+      );
+    } catch (e) {
+      print('Error in GenreSelect build: $e');
+      return Scaffold(
+        body: Center(child: Text('Error occurred')),
+      );
+    }
+  }
+}
+
+class LoginPage extends StatelessWidget {
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Login'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+      ),
+      body: Container(
+        margin:
+            EdgeInsets.symmetric(horizontal: 20), // Add left and right margins
+        child: Column(
+          mainAxisAlignment:
+              MainAxisAlignment.start, // Align content to the top
+          children: [
+            SizedBox(
+              height: 100,
+              width: MediaQuery.of(context).size.width,
+            ),
+            SizedBox(
+                height: 100,
+                width: MediaQuery.of(context).size.width,
+                child: Align(
+                  alignment: Alignment.center,
+                  child: Text('Soundmates',
+                      style: TextStyle(
+                        fontFamily: 'Basic',
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      )),
+                )),
+            SizedBox(
+                height:
+                    20), // Increase the space between the title and the text fields
+            TextField(
+              controller: usernameController,
+              decoration: InputDecoration(
+                hintText: 'Username',
+              ),
+            ),
+            SizedBox(height: 10),
+            TextField(
+              controller: passwordController,
+              decoration: InputDecoration(
+                hintText: 'Password',
+              ),
+            ),
+            SizedBox(height: 50),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => MyHomePage()));
+              },
+              child: Text('Login'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class GenreSelect extends StatefulWidget {
+  @override
+  State<GenreSelect> createState() => _GenreSelectState();
+}
+
+class _GenreSelectState extends State<GenreSelect> {
+  final List<String> genres = [
+    'Rock',
+    'Pop',
+    'Hip Hop',
+    'Rap',
+    'Country',
+    'Jazz',
+    'Classical',
+    'Electronic',
+    'Metal',
+    'R&B',
+    'Reggae',
+    'Folk',
+    'Blues',
+    'Punk',
+    'Indie',
+    'Soul',
+    'Funk',
+    'Disco',
+    'Techno',
+    'House',
+    'EDM',
+    'Dubstep',
+    'Trap',
+    'Drum & Bass',
+    'Ambient',
+    'Reggaeton',
+    'Ska',
+    'Gospel',
+    'Latin',
+    'K-Pop',
+  ];
+
+  List<String> filteredGenres = [];
+
+  @override
+  Widget build(BuildContext context) {
+    print('inside or sth?');
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Genre Selector"),
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            Center(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.white,
+                ),
+                width: MediaQuery.of(context).size.width * 0.9,
+                child: SingleChildScrollView(
+                  child: TypeAheadField<String>(
+                    textFieldConfiguration: TextFieldConfiguration(
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: 'Search Genre',
+                        prefixIcon: Icon(Icons.search),
+                        filled: true,
+                        fillColor: Colors.white,
+                        hintStyle: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                    suggestionsCallback: (pattern) {
+                      return genres.where((genre) {
+                        return genre
+                            .toLowerCase()
+                            .contains(pattern.toLowerCase());
+                      }).toList();
+                    },
+                    itemBuilder: (context, suggestion) {
+                      return GestureDetector(
+                        onTap: () {
+                          // Handle suggestion selection here
+                          print(suggestion);
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return CustomGenreAlert(genre: suggestion);
+                            },
+                          );
+                        },
+                        child: Container(
+                          color: Colors.white, // Set the background color
+                          child: ListTile(
+                            title: Text(
+                              suggestion,
+                              style: TextStyle(
+                                color: Colors.black, // Set the text color
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    noItemsFoundBuilder: (context) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child:
+                          Text('No Genres Found', textAlign: TextAlign.center),
+                    ),
+                    onSuggestionSelected: (suggestion) {
+                      // Handle suggestion selection here
+                      print(suggestion);
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return CustomGenreAlert(genre: suggestion);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 16),
+            SingleChildScrollView(
+                child: Column(
+              children: [
+                GenreBox(genre: 'Rock', percentage: 69.0),
+                GenreBox(genre: 'Pop', percentage: 69.0),
+                GenreBox(genre: 'Hip Hop', percentage: 69.0),
               ],
-            )));
+            )),
+          ],
+        ),
+      ),
+      bottomSheet: Container(
+        color: Colors.transparent,
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.7,
+          decoration:
+              BoxDecoration(color: Theme.of(context).colorScheme.background),
+          child: ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => MyHomePage()),
+              );
+            },
+            child: Text('Continue'),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class CustomGenreAlert extends StatefulWidget {
+  final String genre;
+
+  const CustomGenreAlert({required this.genre});
+
+  @override
+  State<CustomGenreAlert> createState() => _CustomGenreAlertState();
+}
+
+class _CustomGenreAlertState extends State<CustomGenreAlert> {
+  double _sliderValue = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: Colors.transparent,
+      contentPadding: EdgeInsets.zero,
+      content: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.background,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 16, 16, 0),
+              child: Text(
+                widget.genre,
+                style: TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
+            SizedBox(height: 6),
+            Row(
+              children: [
+                Expanded(
+                  child: Slider(
+                    value: _sliderValue,
+                    min: 0,
+                    max: 100,
+                    onChanged: (newValue) {
+                      setState(() {
+                        _sliderValue = newValue;
+                      });
+                    },
+                  ),
+                ),
+                SizedBox(width: 8),
+                Container(
+                  width: 40,
+                  child: Text(
+                    '${_sliderValue.round()}',
+                    style: TextStyle(
+                        fontSize: 16,
+                        color: Theme.of(context).colorScheme.primary),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                // Save the slider value here
+                print('Slider value: ${_sliderValue.round()}');
+                Navigator.of(context).pop();
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                child: Text(
+                  'OK',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class GenreBox extends StatelessWidget {
+  final String genre;
+  final double percentage;
+
+  const GenreBox({
+    required this.genre,
+    required this.percentage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
+      child: GestureDetector(
+        onTap: () {
+          // Handle suggestion selection here
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return CustomGenreAlert(genre: genre);
+            },
+          );
+        },
+        child: Container(
+          height: 70,
+          width: 300,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                child: Row(
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        "${genre}: \t\t ${percentage.toInt()}%",
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                top: 5,
+                right: 5,
+                child: GestureDetector(
+                  onTap: () {
+                    // Handle the tap on the close button
+                    print('Close button tapped');
+                  },
+                  child: Icon(Icons.close, size: 20, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
