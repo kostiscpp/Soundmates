@@ -1,15 +1,58 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'colors.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'dart:convert';
+
+class SecureStorage {
+  final _storage = FlutterSecureStorage();
+
+  Future<void> storeCredentials(String username, String password) async {
+    await _storage.write(key: 'username', value: username);
+    await _storage.write(key: 'password', value: password);
+  }
+
+  Future<Map<String, String>> getCredentials() async {
+    String? username = await _storage.read(key: 'username');
+    String? password = await _storage.read(key: 'password');
+    return {'username': username ?? '', 'password': password ?? ''};
+  }
+
+  Future<void> clearCredential() async {
+    await _storage.deleteAll();
+  }
+}
 
 void main() {
   runApp(MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool _isLoggedIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkCredentials();
+  }
+
+  Future<void> _checkCredentials() async {
+    var credentials = await SecureStorage().getCredentials();
+    if (credentials['username'] != '' && credentials['password'] != '') {
+      setState(() {
+        _isLoggedIn = true;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,15 +69,15 @@ class MyApp extends StatelessWidget {
             surface: AppColors.boxbackground,
             background: AppColors.appbackground,
             error: AppColors.reject,
-            onPrimary: AppColors.appbackground,
-            onSecondary: AppColors.appbackground,
-            onSurface: AppColors.appbackground,
-            onBackground: AppColors.appbackground,
+            onPrimary: Colors.white,
+            onSecondary: Colors.white,
+            onSurface: Colors.white,
+            onBackground: Colors.white,
             onError: AppColors.appbackground,
             brightness: Brightness.dark,
           ),
         ),
-        home: MyHomePage(),
+        home: _isLoggedIn ? MyHomePage() : IndexPage(),
       ),
     );
   }
@@ -116,10 +159,39 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-class SwipePage extends StatelessWidget {
+class SwipePage extends StatefulWidget {
+  @override
+  State<SwipePage> createState() => _SwipePageState();
+}
+
+class _SwipePageState extends State<SwipePage> {
+  List<Profile> profiles = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchProfiles();
+  }
+
+  Future<void> fetchProfiles() async {
+    final response =
+        await http.get(Uri.parse('https://yourserver.com/get_profiles_swipe'));
+    List<dynamic> profileJson = json.decode(response.body)['results'];
+    setState(() {
+      profiles = profileJson.map((json) => Profile.fromJson(json)).toList();
+    });
+    if (response.statusCode == 200) {
+    } else {
+      return;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return PhotoWidget();
+    return Stack(
+      children:
+          profiles.map((profile) => ProfileWidget(profile: profile)).toList(),
+    );
   }
 }
 
@@ -250,19 +322,42 @@ class ProfilePage extends StatelessWidget {
 class AppBarWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return AppBar(
-      backgroundColor: Theme.of(context).colorScheme.background,
-      title: Center(
-        child: Text('Soundmates',
-            style: TextStyle(
-              fontFamily: 'Basic',
-              fontSize: 30,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
-            )),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 20, 0, 5),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.background,
+        ),
+        //backgroundColor: Theme.of(context).colorScheme.background,
+        child: Center(
+          child: Text('Soundmates',
+              style: TextStyle(
+                fontFamily: 'Basic',
+                fontSize: 30,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              )),
+        ),
       ),
     );
   }
+}
+
+class Profile {
+  final String name;
+  final int age;
+  final String distance;
+  final String job;
+  final List<String> photoUrls;
+  final Pair<String, String> boxes;
+
+  Profile(
+      {required this.name,
+      required this.age,
+      required this.photoUrls,
+      required this.distance,
+      required this.job,
+      required this.boxes});
 }
 
 class PhotoWidget extends StatefulWidget {
@@ -1222,14 +1317,48 @@ class IndexPage extends StatelessWidget {
   }
 }
 
-class SignUpPage extends StatelessWidget {
+class SignUpPage extends StatefulWidget {
+  @override
+  State<SignUpPage> createState() => _SignUpPageState();
+}
+
+class _SignUpPageState extends State<SignUpPage> {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController ageController = TextEditingController();
-  final TextEditingController genderController = TextEditingController();
-  final TextEditingController preferredGenderController =
-      TextEditingController();
+  String? selectedGender;
+  String? selectedPreferredGender;
+
+  Future<String?> sendDataToServer() async {
+    if (1 + 1 == 2) return null;
+    try {
+      var response = await http.post(
+        Uri.parse('https://yourserver.com/signup'),
+        body: {
+          'username': usernameController.text,
+          'password': passwordController.text,
+          'email': emailController.text,
+          'age': ageController.text,
+          'gender': selectedGender,
+          'preferredGender': selectedPreferredGender,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        SecureStorage()
+            .storeCredentials(usernameController.text, passwordController.text);
+        return null;
+      } else {
+        // Error occurred
+        return response.body;
+      }
+    } catch (e) {
+      // Exception handling
+      print('Error sending data: $e');
+      return 'Error sending data';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1271,6 +1400,7 @@ class SignUpPage extends StatelessWidget {
                 decoration: InputDecoration(
                   hintText: 'Password',
                 ),
+                obscureText: true,
               ),
               SizedBox(height: 20),
               TextField(
@@ -1287,26 +1417,84 @@ class SignUpPage extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 20),
-              TextField(
-                controller: genderController,
+              DropdownButtonFormField<String>(
+                value: selectedGender,
                 decoration: InputDecoration(
-                  hintText: 'Gender',
+                  hintText: 'Select Gender',
+                  border: OutlineInputBorder(),
                 ),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    selectedGender = newValue;
+                  });
+                },
+                items: <String>['Man', 'Woman', 'Non-Binary']
+                    .map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
               ),
               SizedBox(height: 20),
-              TextField(
-                controller: preferredGenderController,
+              DropdownButtonFormField<String>(
+                value: selectedPreferredGender,
                 decoration: InputDecoration(
-                  hintText: 'Preferred Gender',
+                  hintText: 'Select Preferred Gender',
+                  border: OutlineInputBorder(),
                 ),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    selectedPreferredGender = newValue;
+                  });
+                },
+                items: <String>['Man', 'Woman', 'Any']
+                    .map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
               ),
               SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () {
-                  print('got this far');
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => GenreSelect()));
-                  print('Somehow got here?');
+                onPressed: () async {
+                  final currentContext = context;
+
+                  String? result = await sendDataToServer();
+
+                  if (result == null) {
+                    // check out if context is still valid
+                    if (!mounted) return;
+
+                    Navigator.pushReplacement(
+                      currentContext,
+                      MaterialPageRoute(
+                        builder: (context) => MyHomePage(),
+                      ),
+                    );
+                  } else {
+                    if (!mounted) return;
+
+                    // Show an alert dialog
+                    showDialog(
+                      context: currentContext,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: Text('Error'),
+                          content: Text(result),
+                          actions: <Widget>[
+                            TextButton(
+                              child: Text('OK'),
+                              onPressed: () {
+                                Navigator.of(context).pop(); // Close the dialog
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  }
                 },
                 child: Text('Sign Up'),
               ),
@@ -1323,9 +1511,41 @@ class SignUpPage extends StatelessWidget {
   }
 }
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
   final TextEditingController usernameController = TextEditingController();
+
   final TextEditingController passwordController = TextEditingController();
+
+  Future<String?> sendDataToServer() async {
+    if (1 + 1 == 2) return null;
+    try {
+      var response = await http.post(
+        Uri.parse('https://yourserver.com/login'),
+        body: {
+          'username': usernameController.text,
+          'password': passwordController.text,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        SecureStorage()
+            .storeCredentials(usernameController.text, passwordController.text);
+        return null;
+      } else {
+        // Error occurred
+        return response.body;
+      }
+    } catch (e) {
+      // Exception handling
+      print('Error sending data: $e');
+      return 'Error sending data';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1373,12 +1593,46 @@ class LoginPage extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: 'Password',
               ),
+              obscureText: true,
             ),
             SizedBox(height: 50),
             ElevatedButton(
-              onPressed: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => MyHomePage()));
+              onPressed: () async {
+                final currentContext = context;
+
+                String? result = await sendDataToServer();
+
+                if (result == null) {
+                  if (!mounted) return;
+
+                  Navigator.pushReplacement(
+                    currentContext,
+                    MaterialPageRoute(
+                      builder: (context) => MyHomePage(),
+                    ),
+                  );
+                } else {
+                  if (!mounted) return;
+
+                  // Show an alert dialog
+                  showDialog(
+                    context: currentContext,
+                    builder: (context) {
+                      return AlertDialog(
+                        title: Text('Error'),
+                        content: Text(result),
+                        actions: <Widget>[
+                          TextButton(
+                            child: Text('OK'),
+                            onPressed: () {
+                              Navigator.of(context).pop(); // Close the dialog
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                }
               },
               child: Text('Login'),
             ),
@@ -1596,7 +1850,7 @@ class _CustomGenreAlertState extends State<CustomGenreAlert> {
                   ),
                 ),
                 SizedBox(width: 8),
-                Container(
+                SizedBox(
                   width: 40,
                   child: Text(
                     '${_sliderValue.round()}',
@@ -1675,7 +1929,7 @@ class GenreBox extends StatelessWidget {
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
-                        "${genre}: \t\t ${percentage.toInt()}%",
+                        "$genre: \t\t ${percentage.toInt()}%",
                         style: TextStyle(
                           fontSize: 30,
                           fontWeight: FontWeight.bold,
