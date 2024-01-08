@@ -212,15 +212,45 @@ class _SwipePageState extends State<SwipePage> {
   }
 
   void onButtonPressed(Profile profile, String buttonType) async {
-    await sendDataToServer(profile, buttonType);
-
-    setState(() {
-      profiles.remove(profile);
-    });
+    String answer = await sendDataToServer(profile, buttonType);
+      if (answer == ''){  
+        setState(() {
+        profiles.remove(profile);
+      });
+    } else {
+      // I should alert with message
+    }
+    
   }
 
-  Future<void> sendDataToServer(Profile profile, String buttonType) async {
-    //
+  Future<String> sendDataToServer(Profile profile, String buttonType) async {
+    try {  
+      var credentials = await SecureStorage().getCredentials();
+      String myUsername = credentials['username']!;
+      String targetusername = profile.username;
+
+      var response = await http.post(  
+        Uri.parse('https://yourserver.com/api/interaction'),
+        headers: {  
+          'Content-Type': 'application/json; charset=UTF-8',
+
+        },
+        body: jsonEncode({  
+          'username': myUsername,
+          'targetusername': targetusername,
+          'interaction': buttonType,
+        }),
+        
+      );
+
+      if (response.statusCode == 200) {  
+        return '';
+      } else {  
+        return 'There was a small issue, please try again';
+      }
+    } catch (e) {  
+      return 'There was a small issue, please try again';
+    }
   }
 
   @override
@@ -428,52 +458,23 @@ class PhotoWidget extends StatefulWidget {
   State<PhotoWidget> createState() => _PhotoWidgetState();
 }
 
-class _PhotoWidgetState extends State<PhotoWidget>
-    with TickerProviderStateMixin {
+class _PhotoWidgetState extends State<PhotoWidget> {
   int currentPhotoIndex = 0;
-  late AnimationController _controller;
-  late Animation<Offset> _slideAnimation;
+  late PageController _pageController;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 500),
-    );
-    _slideAnimation = Tween<Offset>(
-      begin: Offset.zero,
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.elasticOut,
-    ));
+    _pageController = PageController(initialPage: 1); // Middle page
   }
 
-  void _startDrag(DragStartDetails details) {
-    _controller.reset();
-  }
-
-  void _updateDrag(DragUpdateDetails details) {
-    setState(() {
-      _slideAnimation = Tween<Offset>(
-        begin: Offset.zero,
-        end: Offset(details.primaryDelta! / 400, 0),
-      ).animate(_controller);
-    });
-  }
-
-  void _endDrag(DragEndDetails details) {
-    final velocity = details.primaryVelocity!;
-    final direction = velocity < 0 ? 'reject' : 'like';
-
-    if (velocity.abs() > 800) {
-      widget.onButtonPressed(widget.profile, direction);
-      _controller.forward().then((_) {
-        _controller.reset();
-      });
-    } else {
-      _controller.reverse();
+  void _onPageChanged(int page) {
+    if (page == 0) {
+      widget.onButtonPressed(widget.profile, 'like');
+      _pageController.jumpToPage(1); // Reset to middle page
+    } else if (page == 2) {
+      widget.onButtonPressed(widget.profile, 'reject');
+      _pageController.jumpToPage(1); // Reset to middle page
     }
   }
 
@@ -497,162 +498,170 @@ class _PhotoWidgetState extends State<PhotoWidget>
   Widget build(BuildContext context) {
     final totalPhotos = widget.profile.photoUrls.length;
     final profile = widget.profile;
-    return GestureDetector(
-      onHorizontalDragStart: _startDrag,
-      onHorizontalDragUpdate: _updateDrag,
-      onHorizontalDragEnd: _endDrag,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: Padding(
+
+    return PageView(
+      controller: _pageController,
+      onPageChanged: _onPageChanged,
+      children: [
+        Container(color: Colors.transparent), // Left transparent page
+        Padding(
           padding: EdgeInsets.fromLTRB(10, 8, 10, 20),
-          child: Stack(
-            children: [
-              widget.profile.photoUrls.isNotEmpty
-                  ? Container(
-                      decoration: BoxDecoration(
-                        borderRadius:
-                            BorderRadius.circular(20), // Rounded corners
-                        image: DecorationImage(
-                          image: NetworkImage(
-                              widget.profile.photoUrls[currentPhotoIndex]),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    )
-                  : Container(), // put a placeholder photo here
-              Container(
+          child: _buildPhotoStack(profile, totalPhotos),
+        ),
+        Container(color: Colors.transparent), // Right transparent page
+      ],
+    );
+  }
+
+  Widget _buildPhotoStack(Profile profile, int totalPhotos) {
+    return Stack(
+      children: [
+        widget.profile.photoUrls.isNotEmpty
+            ? Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  gradient: LinearGradient(
-                    begin: Alignment.center,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black.withOpacity(1)],
+                  borderRadius: BorderRadius.circular(20), // Rounded corners
+                  image: DecorationImage(
+                    image: NetworkImage(
+                        widget.profile.photoUrls[currentPhotoIndex]),
+                    fit: BoxFit.cover,
                   ),
                 ),
-              ),
-
-              Positioned(
-                top: 10,
-                left: 0,
-                right: 0,
-                child: PhotoIndicator(
-                  totalPhotos: totalPhotos,
-                  currentPhoto: currentPhotoIndex,
-                ),
-              ),
-
-              // Left part - Previous Photo
-              Positioned.fill(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: GestureDetector(
-                    onTap: _goToPreviousPhoto,
-                    child: Container(
-                      color: Colors.red.withOpacity(0.2), // Semi-transparent
-                      width:
-                          MediaQuery.of(context).size.width * 0.3, // Half width
-                    ),
-                  ),
-                ),
-              ),
-              // Right part - Next Photo
-              Positioned.fill(
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: GestureDetector(
-                    onTap: _goToNextPhoto,
-                    child: Container(
-                      color: Colors.red.withOpacity(0.2), // Semi-transparent
-                      width:
-                          MediaQuery.of(context).size.width * 0.3, // Half width
-                    ),
-                  ),
-                ),
-              ),
-
-              Positioned(
-                left: 10,
-                top: 480, // Change alignment to top center
-                child: Text(
-                  '${profile.name} ${profile.age}',
-                  style: TextStyle(
-                    fontFamily: 'Roboto',
-                    fontSize: 40,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              Positioned(
-                  left: 10,
-                  top: 530,
-                  child: Text(
-                    profile.distance,
-                    style: TextStyle(
-                      fontFamily: 'Roboto',
-                      fontSize: 16,
-                      color: Colors.white,
-                    ),
-                  )),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: Container(
-                  padding: EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => widget.onButtonPressed(
-                              widget.profile, 'reload'), // Button 1 action
-                          child: Text('Reload'),
-                        ),
-                      ),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () =>
-                              widget.onButtonPressed(widget.profile, 'reject'),
-                          child: Text('Reject'),
-                        ),
-                      ),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () =>
-                              widget.onButtonPressed(widget.profile, 'like'),
-                          child: Text('Like'),
-                        ),
-                      ),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => widget.onButtonPressed(
-                              widget.profile, 'superlike'),
-                          child: Text('SuperLike'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              Positioned(
-                right: 30,
-                top: 480,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) =>
-                              MoreInfoPage(profile: widget.profile)),
-                    );
-                  },
-                  child: Text('More Info'),
-                ),
-              ),
-            ],
+              )
+            : Container(), // put a placeholder photo here
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.center,
+              end: Alignment.bottomCenter,
+              colors: [Colors.transparent, Colors.black.withOpacity(1)],
+            ),
           ),
         ),
-      ),
+
+        Positioned(
+          top: 10,
+          left: 0,
+          right: 0,
+          child: PhotoIndicator(
+            totalPhotos: totalPhotos,
+            currentPhoto: currentPhotoIndex,
+          ),
+        ),
+
+        // Left part - Previous Photo
+        Positioned.fill(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: GestureDetector(
+              onTap: _goToPreviousPhoto,
+              child: Container(
+                color: Colors.red.withOpacity(0.2), // Semi-transparent
+                width: MediaQuery.of(context).size.width * 0.3, // Half width
+              ),
+            ),
+          ),
+        ),
+        // Right part - Next Photo
+        Positioned.fill(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: GestureDetector(
+              onTap: _goToNextPhoto,
+              child: Container(
+                color: Colors.red.withOpacity(0.2), // Semi-transparent
+                width: MediaQuery.of(context).size.width * 0.3, // Half width
+              ),
+            ),
+          ),
+        ),
+
+        Positioned(
+          left: 10,
+          top: 480, // Change alignment to top center
+          child: Text(
+            '${profile.name} ${profile.age}',
+            style: TextStyle(
+              fontFamily: 'Roboto',
+              fontSize: 40,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        Positioned(
+            left: 10,
+            top: 530,
+            child: Text(
+              profile.distance,
+              style: TextStyle(
+                fontFamily: 'Roboto',
+                fontSize: 16,
+                color: Colors.white,
+              ),
+            )),
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: Container(
+            padding: EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => widget.onButtonPressed(
+                        widget.profile, 'reload'), // Button 1 action
+                    child: Text('Reload'),
+                  ),
+                ),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () =>
+                        widget.onButtonPressed(widget.profile, 'reject'),
+                    child: Text('Reject'),
+                  ),
+                ),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () =>
+                        widget.onButtonPressed(widget.profile, 'like'),
+                    child: Text('Like'),
+                  ),
+                ),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () =>
+                        widget.onButtonPressed(widget.profile, 'superlike'),
+                    child: Text('SuperLike'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        Positioned(
+          right: 30,
+          top: 480,
+          child: ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        MoreInfoPage(profile: widget.profile)),
+              );
+            },
+            child: Text('More Info'),
+          ),
+        ),
+      ],
     );
+  }
+
+   @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 }
 
@@ -681,6 +690,8 @@ class PhotoIndicator extends StatelessWidget {
       }),
     );
   }
+
+ 
 }
 
 class MatchBox extends StatelessWidget {
