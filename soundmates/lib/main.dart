@@ -196,7 +196,29 @@ class _SwipePageState extends State<SwipePage> {
           Pair('My Favourite TV Show', 'The Umbrella Academy'),
           Pair('My Favourite Book', 'The Perks of Being a Wallflower')
         ]);
-    profiles = [dummyprofile, dummyprofile, dummyprofile];
+    final Profile dummy2 = Profile(
+        username: 'laurel1',
+        age: 19,
+        name: 'Laurel',
+        distance: '6km',
+        job: 'Student',
+        photoUrls: [
+          'https://upload.wikimedia.org/wikipedia/commons/3/33/SYDNEY%2C_AUSTRALIA_-_JANUARY_23_Margot_Robbie_arrives_at_the_Australian_Premiere_of_%27I%2C_Tonya%27_on_January_23%2C_2018_in_Sydney%2C_Australia_%2828074883999%29_%28cropped%29.jpg',
+          'https://hips.hearstapps.com/hmg-prod/images/margot-robbie-attends-the-new-york-premiere-of-asteroid-news-photo-1689698979.jpg?crop=0.733xw:0.489xh;0.107xw,0.0363xh&resize=640:*'
+        ],
+        boxes: [
+          Pair('What I\'m looking for',
+              'Something serious, but open for casual'),
+          Pair('My Favourite Band', 'My Chemical Romance'),
+          Pair('My Hobbies', 'Singing\nDancing\nKick Boxing\nCrossfit'),
+          Pair('Song stuck in my head',
+              'I\'m Not Okay (I Promise) - My Chemical Romance'),
+          Pair('My Favourite Food', 'Pizza'),
+          Pair('My Favourite Movie', 'The Nightmare Before Christmas'),
+          Pair('My Favourite TV Show', 'The Umbrella Academy'),
+          Pair('My Favourite Book', 'The Perks of Being a Wallflower')
+        ]);
+    profiles = [dummyprofile, dummy2, dummyprofile];
     if (1 + 1 == 2) return;
     final response =
         await http.get(Uri.parse('https://yourserver.com/get_profiles_swipe'));
@@ -213,42 +235,57 @@ class _SwipePageState extends State<SwipePage> {
 
   void onButtonPressed(Profile profile, String buttonType) async {
     String answer = await sendDataToServer(profile, buttonType);
-      if (answer == ''){  
-        setState(() {
+    if (!mounted) return;
+
+    if (answer == '') {
+      setState(() {
         profiles.remove(profile);
       });
     } else {
-      // I should alert with message
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Error'),
+            content: Text(answer),
+            actions: <Widget>[
+              TextButton(
+                child: Text('OK'),
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+              ),
+            ],
+          );
+        },
+      );
     }
-    
   }
 
   Future<String> sendDataToServer(Profile profile, String buttonType) async {
-    try {  
+    try {
       var credentials = await SecureStorage().getCredentials();
       String myUsername = credentials['username']!;
       String targetusername = profile.username;
 
-      var response = await http.post(  
+      var response = await http.post(
         Uri.parse('https://yourserver.com/api/interaction'),
-        headers: {  
+        headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-
         },
-        body: jsonEncode({  
+        body: jsonEncode({
           'username': myUsername,
           'targetusername': targetusername,
           'interaction': buttonType,
         }),
-        
       );
 
-      if (response.statusCode == 200) {  
+      if (response.statusCode == 200) {
         return '';
-      } else {  
+      } else {
         return 'There was a small issue, please try again';
       }
-    } catch (e) {  
+    } catch (e) {
       return 'There was a small issue, please try again';
     }
   }
@@ -258,6 +295,7 @@ class _SwipePageState extends State<SwipePage> {
     return Scaffold(
       body: profiles.isNotEmpty
           ? PhotoWidget(
+              key: ValueKey(profiles.first.username),
               profile: profiles.first,
               onButtonPressed: onButtonPressed,
             )
@@ -266,7 +304,64 @@ class _SwipePageState extends State<SwipePage> {
   }
 }
 
-class LikedPage extends StatelessWidget {
+class LikedPage extends StatefulWidget {
+  @override
+  State<LikedPage> createState() => _LikedPageState();
+}
+
+class _LikedPageState extends State<LikedPage> {
+  List<dynamic> liked = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchLiked();
+  }
+
+  Future<void> fetchLiked() async {
+    try {
+      var credentials = await SecureStorage().getCredentials();
+      String myUsername = credentials['username'] ?? '';
+      final response = await http.get(
+        Uri.parse('https://yourserver.com/api/liked').replace(queryParameters: {
+          'username': myUsername,
+        }),
+      );
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        setState(() {
+          liked = jsonData['answers'];
+        });
+      } else {
+        if (!mounted) return;
+        _showErrorDialog(context, 'Failed to load superlikes.');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showErrorDialog(context, 'Error fetching superlikes');
+    }
+  }
+
+  void _showErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Error'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -283,15 +378,76 @@ class LikedPage extends StatelessWidget {
                     color: Colors.white,
                   )),
             )),
-        MatchBox(),
-        MatchBox(),
-        MatchBox(),
+        for (var like in liked)
+          MatchBox(
+              name: like['name'],
+              age: like['age'],
+              photoUrl: like['photoUrl'],
+              socials: like['socials']),
       ]),
     );
   }
 }
 
-class MatchesPage extends StatelessWidget {
+class MatchesPage extends StatefulWidget {
+  @override
+  State<MatchesPage> createState() => _MatchesPageState();
+}
+
+class _MatchesPageState extends State<MatchesPage> {
+  List<dynamic> matches = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchMatches();
+  }
+
+  Future<void> fetchMatches() async {
+    try {
+      var credentials = await SecureStorage().getCredentials();
+      String myUsername = credentials['username'] ?? '';
+      final response = await http.get(
+        Uri.parse('https://yourserver.com/api/matches')
+            .replace(queryParameters: {
+          'username': myUsername,
+        }),
+      );
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        setState(() {
+          matches = jsonData['answers'];
+        });
+      } else {
+        if (!mounted) return;
+        _showErrorDialog(context, 'Failed to load matches.');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showErrorDialog(context, 'Error fetching matches');
+    }
+  }
+
+  void _showErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Error'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -308,14 +464,21 @@ class MatchesPage extends StatelessWidget {
                     color: Colors.white,
                   )),
             )),
-        NewMatchBox(),
-        MatchBox(),
-        MatchBox(),
-        MatchBox(),
-        MatchBox(),
-        MatchBox(),
-        MatchBox(),
-        MatchBox(),
+        for (var match in matches)
+          if (match['new'] == true)
+            NewMatchBox(
+              name: match['name'],
+              age: match['age'],
+              photoUrl: match['photoUrl'],
+              socials: match['socials'],
+            )
+          else
+            MatchBox(
+              name: match['name'],
+              age: match['age'],
+              photoUrl: match['photoUrl'],
+              socials: match['socials'],
+            ),
       ]),
     );
   }
@@ -453,7 +616,7 @@ class PhotoWidget extends StatefulWidget {
   final Profile profile;
   final Function(Profile, String) onButtonPressed;
 
-  PhotoWidget({required this.profile, required this.onButtonPressed});
+  PhotoWidget({Key? key, required this.profile, required this.onButtonPressed});
   @override
   State<PhotoWidget> createState() => _PhotoWidgetState();
 }
@@ -466,6 +629,17 @@ class _PhotoWidgetState extends State<PhotoWidget> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 1); // Middle page
+  }
+
+  @override
+  void didUpdateWidget(PhotoWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.profile != oldWidget.profile) {
+      // Reset the photo index when the profile changes
+      setState(() {
+        currentPhotoIndex = 0;
+      });
+    }
   }
 
   void _onPageChanged(int page) {
@@ -556,7 +730,7 @@ class _PhotoWidgetState extends State<PhotoWidget> {
             child: GestureDetector(
               onTap: _goToPreviousPhoto,
               child: Container(
-                color: Colors.red.withOpacity(0.2), // Semi-transparent
+                color: Colors.red.withOpacity(0), // Semi-transparent
                 width: MediaQuery.of(context).size.width * 0.3, // Half width
               ),
             ),
@@ -569,7 +743,7 @@ class _PhotoWidgetState extends State<PhotoWidget> {
             child: GestureDetector(
               onTap: _goToNextPhoto,
               child: Container(
-                color: Colors.red.withOpacity(0.2), // Semi-transparent
+                color: Colors.red.withOpacity(0), // Semi-transparent
                 width: MediaQuery.of(context).size.width * 0.3, // Half width
               ),
             ),
@@ -658,7 +832,7 @@ class _PhotoWidgetState extends State<PhotoWidget> {
     );
   }
 
-   @override
+  @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
@@ -690,108 +864,159 @@ class PhotoIndicator extends StatelessWidget {
       }),
     );
   }
-
- 
 }
 
 class MatchBox extends StatelessWidget {
+  final String name;
+  final int age;
+  final String photoUrl;
+  final String socials;
+
+  MatchBox(
+      {required this.name,
+      required this.age,
+      required this.photoUrl,
+      required this.socials});
+
+  void _showSocials(BuildContext context, String socials, String photoUrl) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CustomMatchSocialDialog(  
+          socials: socials,
+          photoUrl: photoUrl,
+        );
+      },
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-        height: 80,
-        child: Row(children: [
-          Container(
-            height: 80,
-            width: 80,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(40), // Rounded corners
-              image: DecorationImage(
-                image: AssetImage('assets/images/dalle.png'),
-                fit: BoxFit.cover,
+    return GestureDetector(
+      onTap:() => _showSocials(context, socials, photoUrl),
+      child: SizedBox(
+          height: 80,
+          child: Row(children: [
+            Container(
+              height: 80,
+              width: 80,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(40), // Rounded corners
+                image: DecorationImage(
+                  image: NetworkImage(photoUrl),
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
-          ),
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.white,
-                    width: 1.0,
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.white,
+                      width: 1.0,
+                    ),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('$name $age',
+                        style: TextStyle(
+                          fontFamily: 'Roboto',
+                          fontSize: 30,
+                          color: Colors.white,
+                        )),
                   ),
                 ),
               ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Laurel 19',
-                      style: TextStyle(
-                        fontFamily: 'Roboto',
-                        fontSize: 30,
-                        color: Colors.white,
-                      )),
-                ),
-              ),
             ),
-          ),
-        ]));
+          ])),
+    );
   }
 }
 
 class NewMatchBox extends StatelessWidget {
+  final String name;
+  final int age;
+  final String photoUrl;
+  final String socials;
+
+  NewMatchBox(
+      {required this.name,
+      required this.age,
+      required this.photoUrl,
+      required this.socials});
+
+  void _showSocials(BuildContext context, String socials, String photoUrl) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CustomMatchSocialDialog(  
+          socials: socials,
+          photoUrl: photoUrl,
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-        height: 80,
-        child: Row(children: [
-          Container(
-            height: 80,
-            width: 80,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(40), // Rounded corners
-              image: DecorationImage(
-                image: AssetImage('assets/images/dalle.png'),
-                fit: BoxFit.cover,
-              ),
-            ),
-            child: Align(
-              alignment: Alignment.topRight,
-              child: Container(
-                height: 20,
-                width: 20,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10), // Rounded corners
-                  color: Theme.of(context).colorScheme.primary,
+    return GestureDetector(
+      onTap: () => _showSocials(context, socials, photoUrl),
+      child: SizedBox(
+          height: 80,
+          child: Row(children: [
+            Container(
+              height: 80,
+              width: 80,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(40), // Rounded corners
+                image: DecorationImage(
+                  image: NetworkImage(photoUrl),
+                  fit: BoxFit.cover,
                 ),
               ),
-            ),
-          ),
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.white,
-                    width: 1.0,
+              child: Align(
+                alignment: Alignment.topRight,
+                child: Container(
+                  height: 20,
+                  width: 20,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10), // Rounded corners
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
               ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Laurel 19',
-                      style: TextStyle(
-                        fontFamily: 'Roboto',
-                        fontSize: 30,
-                        color: Colors.white,
-                      )),
+            ),
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.white,
+                      width: 1.0,
+                    ),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('$name $age',
+                        style: TextStyle(
+                          fontFamily: 'Roboto',
+                          fontSize: 30,
+                          color: Colors.white,
+                        )),
+                  ),
                 ),
               ),
             ),
-          ),
-        ]));
+          ])),
+    );
   }
 }
 
@@ -2083,3 +2308,89 @@ class GenreBox extends StatelessWidget {
     );
   }
 }
+
+
+class CustomMatchSocialDialog extends StatefulWidget {
+  final String socials;
+  final String photoUrl;
+
+  const CustomMatchSocialDialog({required this.socials, required this.photoUrl});
+  @override
+  State<CustomMatchSocialDialog> createState() => _CustomMatchSocialDialogState();
+}
+
+class _CustomMatchSocialDialogState extends State<CustomMatchSocialDialog> {
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      backgroundColor: Colors.transparent,
+      child: Container(
+        height: 300,
+        width: MediaQuery.of(context).size.width * 0.8,
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          children: [
+            TipBox(
+                tip:
+                    'This is where your Matches will reach you. If you change your mind you can always change it later!'),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 1.0,
+                  ),
+                  color: Theme.of(context).colorScheme.background,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 4, // 30% of space
+                        child: Container(
+                          height: 150,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            image: DecorationImage(
+                              image: NetworkImage(widget.photoUrl),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 6, // 70% of space
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
+                          child: Text(
+                            widget.socials,
+                            maxLines: 5,
+                            style: TextStyle(
+                              fontFamily: 'Roboto',
+                              fontSize: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
