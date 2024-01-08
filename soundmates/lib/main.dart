@@ -174,6 +174,30 @@ class _SwipePageState extends State<SwipePage> {
   }
 
   Future<void> fetchProfiles() async {
+    final Profile dummyprofile = Profile(
+        username: 'laurel',
+        age: 19,
+        name: 'Laurel',
+        distance: '6km',
+        job: 'Student',
+        photoUrls: [
+          'https://upload.wikimedia.org/wikipedia/commons/3/33/SYDNEY%2C_AUSTRALIA_-_JANUARY_23_Margot_Robbie_arrives_at_the_Australian_Premiere_of_%27I%2C_Tonya%27_on_January_23%2C_2018_in_Sydney%2C_Australia_%2828074883999%29_%28cropped%29.jpg',
+          'https://hips.hearstapps.com/hmg-prod/images/margot-robbie-attends-the-new-york-premiere-of-asteroid-news-photo-1689698979.jpg?crop=0.733xw:0.489xh;0.107xw,0.0363xh&resize=640:*'
+        ],
+        boxes: [
+          Pair('What I\'m looking for',
+              'Something serious, but open for casual'),
+          Pair('My Favourite Band', 'My Chemical Romance'),
+          Pair('My Hobbies', 'Singing\nDancing\nKick Boxing\nCrossfit'),
+          Pair('Song stuck in my head',
+              'I\'m Not Okay (I Promise) - My Chemical Romance'),
+          Pair('My Favourite Food', 'Pizza'),
+          Pair('My Favourite Movie', 'The Nightmare Before Christmas'),
+          Pair('My Favourite TV Show', 'The Umbrella Academy'),
+          Pair('My Favourite Book', 'The Perks of Being a Wallflower')
+        ]);
+    profiles = [dummyprofile, dummyprofile, dummyprofile];
+    if (1 + 1 == 2) return;
     final response =
         await http.get(Uri.parse('https://yourserver.com/get_profiles_swipe'));
     List<dynamic> profileJson = json.decode(response.body)['results'];
@@ -181,16 +205,33 @@ class _SwipePageState extends State<SwipePage> {
       profiles = profileJson.map((json) => Profile.fromJson(json)).toList();
     });
     if (response.statusCode == 200) {
+      return;
     } else {
       return;
     }
   }
 
+  void onButtonPressed(Profile profile, String buttonType) async {
+    await sendDataToServer(profile, buttonType);
+
+    setState(() {
+      profiles.remove(profile);
+    });
+  }
+
+  Future<void> sendDataToServer(Profile profile, String buttonType) async {
+    //
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children:
-          profiles.map((profile) => ProfileWidget(profile: profile)).toList(),
+    return Scaffold(
+      body: profiles.isNotEmpty
+          ? PhotoWidget(
+              profile: profiles.first,
+              onButtonPressed: onButtonPressed,
+            )
+          : Center(child: Text("No more profiles")),
     );
   }
 }
@@ -344,184 +385,272 @@ class AppBarWidget extends StatelessWidget {
 }
 
 class Profile {
+  final String username;
   final String name;
   final int age;
   final String distance;
   final String job;
   final List<String> photoUrls;
-  final Pair<String, String> boxes;
+  final List<Pair<String, String>> boxes;
 
   Profile(
-      {required this.name,
+      {required this.username,
+      required this.name,
       required this.age,
       required this.photoUrls,
       required this.distance,
       required this.job,
       required this.boxes});
+
+  factory Profile.fromJson(Map<String, dynamic> json) {
+    var boxesJson = json['boxes'] as List;
+    List<Pair<String, String>> boxes = boxesJson.map((box) {
+      return Pair<String, String>(box[0], box[1]);
+    }).toList();
+    return Profile(
+      username: json['username'],
+      name: json['name'],
+      age: json['age'],
+      photoUrls: json['photoUrls'],
+      distance: json['distance'],
+      job: json['job'],
+      boxes: boxes,
+    );
+  }
 }
 
 class PhotoWidget extends StatefulWidget {
+  final Profile profile;
+  final Function(Profile, String) onButtonPressed;
+
+  PhotoWidget({required this.profile, required this.onButtonPressed});
   @override
   State<PhotoWidget> createState() => _PhotoWidgetState();
 }
 
-class _PhotoWidgetState extends State<PhotoWidget> {
-  final int currentPhotoIndex = 1;
-  final int totalPhotos = 5;
+class _PhotoWidgetState extends State<PhotoWidget>
+    with TickerProviderStateMixin {
+  int currentPhotoIndex = 0;
+  late AnimationController _controller;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 500),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _controller,
+      curve: Curves.elasticOut,
+    ));
+  }
+
+  void _startDrag(DragStartDetails details) {
+    _controller.reset();
+  }
+
+  void _updateDrag(DragUpdateDetails details) {
+    setState(() {
+      _slideAnimation = Tween<Offset>(
+        begin: Offset.zero,
+        end: Offset(details.primaryDelta! / 400, 0),
+      ).animate(_controller);
+    });
+  }
+
+  void _endDrag(DragEndDetails details) {
+    final velocity = details.primaryVelocity!;
+    final direction = velocity < 0 ? 'reject' : 'like';
+
+    if (velocity.abs() > 800) {
+      widget.onButtonPressed(widget.profile, direction);
+      _controller.forward().then((_) {
+        _controller.reset();
+      });
+    } else {
+      _controller.reverse();
+    }
+  }
+
+  void _goToPreviousPhoto() {
+    if (currentPhotoIndex > 0) {
+      setState(() {
+        currentPhotoIndex--;
+      });
+    }
+  }
+
+  void _goToNextPhoto() {
+    if (currentPhotoIndex < widget.profile.photoUrls.length - 1) {
+      setState(() {
+        currentPhotoIndex++;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(10, 8, 10, 20),
-      child: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20), // Rounded corners
-              image: DecorationImage(
-                image: AssetImage('assets/images/dalle.png'),
-                fit: BoxFit.cover,
+    final totalPhotos = widget.profile.photoUrls.length;
+    final profile = widget.profile;
+    return GestureDetector(
+      onHorizontalDragStart: _startDrag,
+      onHorizontalDragUpdate: _updateDrag,
+      onHorizontalDragEnd: _endDrag,
+      child: SlideTransition(
+        position: _slideAnimation,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(10, 8, 10, 20),
+          child: Stack(
+            children: [
+              widget.profile.photoUrls.isNotEmpty
+                  ? Container(
+                      decoration: BoxDecoration(
+                        borderRadius:
+                            BorderRadius.circular(20), // Rounded corners
+                        image: DecorationImage(
+                          image: NetworkImage(
+                              widget.profile.photoUrls[currentPhotoIndex]),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    )
+                  : Container(), // put a placeholder photo here
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    begin: Alignment.center,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Colors.black.withOpacity(1)],
+                  ),
+                ),
               ),
-            ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: LinearGradient(
-                begin: Alignment.center,
-                end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Colors.black.withOpacity(1)],
+
+              Positioned(
+                top: 10,
+                left: 0,
+                right: 0,
+                child: PhotoIndicator(
+                  totalPhotos: totalPhotos,
+                  currentPhoto: currentPhotoIndex,
+                ),
               ),
-            ),
-          ),
 
-          Positioned(
-            top: 10,
-            left: 0,
-            right: 0,
-            child: PhotoIndicator(
-              totalPhotos: totalPhotos,
-              currentPhoto: currentPhotoIndex,
-            ),
-          ),
+              // Left part - Previous Photo
+              Positioned.fill(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: GestureDetector(
+                    onTap: _goToPreviousPhoto,
+                    child: Container(
+                      color: Colors.red.withOpacity(0.2), // Semi-transparent
+                      width:
+                          MediaQuery.of(context).size.width * 0.3, // Half width
+                    ),
+                  ),
+                ),
+              ),
+              // Right part - Next Photo
+              Positioned.fill(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: GestureDetector(
+                    onTap: _goToNextPhoto,
+                    child: Container(
+                      color: Colors.red.withOpacity(0.2), // Semi-transparent
+                      width:
+                          MediaQuery.of(context).size.width * 0.3, // Half width
+                    ),
+                  ),
+                ),
+              ),
 
-          // Left part - Previous Photo
-          Positioned.fill(
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: GestureDetector(
-                onTap: () {
-                  // Logic to go to previous photo
-                },
+              Positioned(
+                left: 10,
+                top: 480, // Change alignment to top center
+                child: Text(
+                  '${profile.name} ${profile.age}',
+                  style: TextStyle(
+                    fontFamily: 'Roboto',
+                    fontSize: 40,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              Positioned(
+                  left: 10,
+                  top: 530,
+                  child: Text(
+                    profile.distance,
+                    style: TextStyle(
+                      fontFamily: 'Roboto',
+                      fontSize: 16,
+                      color: Colors.white,
+                    ),
+                  )),
+              Align(
+                alignment: Alignment.bottomCenter,
                 child: Container(
-                  color: Colors.red.withOpacity(0.2), // Semi-transparent
-                  width: MediaQuery.of(context).size.width * 0.3, // Half width
+                  padding: EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => widget.onButtonPressed(
+                              widget.profile, 'reload'), // Button 1 action
+                          child: Text('Reload'),
+                        ),
+                      ),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () =>
+                              widget.onButtonPressed(widget.profile, 'reject'),
+                          child: Text('Reject'),
+                        ),
+                      ),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () =>
+                              widget.onButtonPressed(widget.profile, 'like'),
+                          child: Text('Like'),
+                        ),
+                      ),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => widget.onButtonPressed(
+                              widget.profile, 'superlike'),
+                          child: Text('SuperLike'),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ),
-          // Right part - Next Photo
-          Positioned.fill(
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: GestureDetector(
-                onTap: () {
-                  // Logic to go to next photo
-                },
-                child: Container(
-                  color: Colors.red.withOpacity(0.2), // Semi-transparent
-                  width: MediaQuery.of(context).size.width * 0.3, // Half width
-                ),
-              ),
-            ),
-          ),
 
-          Positioned(
-            left: 10,
-            top: 480, // Change alignment to top center
-            child: Text(
-              'Laurel 19',
-              style: TextStyle(
-                fontFamily: 'Roboto',
-                fontSize: 40,
-                color: Colors.white,
-              ),
-            ),
-          ),
-          Positioned(
-              left: 10,
-              top: 530,
-              child: Text(
-                '6km',
-                style: TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: 16,
-                  color: Colors.white,
+              Positioned(
+                right: 30,
+                top: 480,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              MoreInfoPage(profile: widget.profile)),
+                    );
+                  },
+                  child: Text('More Info'),
                 ),
-              )),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              padding: EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Button 1 action
-                      },
-                      child: Text('Reload'),
-                    ),
-                  ),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Button 2 action
-                      },
-                      child: Text('Reject'),
-                    ),
-                  ),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Button 3 action
-                      },
-                      child: Text('Like'),
-                    ),
-                  ),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Button 4 action
-                      },
-                      child: Text('SuperLike'),
-                    ),
-                  ),
-                ],
               ),
-            ),
+            ],
           ),
-
-          Positioned(
-            right: 30,
-            top: 480,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => MoreInfoPage(
-                          name: 'Laurel',
-                          age: 19,
-                          job: 'National Academy of Dance',
-                          distance: '6km')),
-                );
-              },
-              child: Text('More Info'),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -839,16 +968,9 @@ class Infobox extends StatelessWidget {
 }
 
 class MoreInfoPage extends StatefulWidget {
-  final String name;
-  final int age;
-  final String job;
-  final String distance;
+  final Profile profile;
 
-  MoreInfoPage(
-      {required this.name,
-      required this.age,
-      required this.job,
-      required this.distance});
+  MoreInfoPage({required this.profile});
 
   @override
   State<MoreInfoPage> createState() => _MoreInfoPageState();
@@ -856,33 +978,25 @@ class MoreInfoPage extends StatefulWidget {
 
 class _MoreInfoPageState extends State<MoreInfoPage> {
   var selectedIndex = 0;
-
-  final List<Pair<String, String>> info = [
-    Pair('What I\'m looking for', 'Something serious, but open for casual'),
-    Pair('My Favourite Band', 'My Chemical Romance'),
-    Pair('My Hobbies', 'Singing\nDancing\nKick Boxing\nCrossfit'),
-    Pair('Song stuck in my head', 'Cigarette Daydreams\n-Cage the Elephant'),
-    Pair('An interesting fact about me',
-        'I discovered I am afraid of heights on my 18th birthday when I went skydiving'),
-    Pair('My green flag', 'We can spar together'),
-    Pair('My red flag', 'I’ll win'),
-    Pair('Swipe left if', 'You don’t like dogs'),
-  ];
+  final PageController _pageController = PageController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         body: SingleChildScrollView(
             child: Column(children: [
-      Container(
-        height: MediaQuery.of(context).size.height * 0.5,
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/dalle.png'),
-            fit: BoxFit.cover,
-          ),
-        ),
-      ),
+      SizedBox(
+          height: MediaQuery.of(context).size.height * 0.5,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: widget.profile.photoUrls.length,
+            itemBuilder: (context, index) {
+              return Image.network(
+                widget.profile.photoUrls[index],
+                fit: BoxFit.cover,
+              );
+            },
+          )),
       Container(
         decoration: BoxDecoration(
           border: Border(
@@ -900,21 +1014,21 @@ class _MoreInfoPageState extends State<MoreInfoPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("${widget.name} ${widget.age}",
+                  Text("${widget.profile.name} ${widget.profile.age}",
                       style: TextStyle(
                         fontFamily: 'Roboto',
                         fontSize: 30,
                         color: Colors.white,
                       ),
                       textAlign: TextAlign.left),
-                  Text(widget.job,
+                  Text(widget.profile.job,
                       style: TextStyle(
                         fontFamily: 'Roboto',
                         fontSize: 20,
                         color: Colors.white,
                       ),
                       textAlign: TextAlign.left),
-                  Text(widget.distance,
+                  Text(widget.profile.distance,
                       style: TextStyle(
                         fontFamily: 'Roboto',
                         fontSize: 16,
@@ -934,7 +1048,7 @@ class _MoreInfoPageState extends State<MoreInfoPage> {
         ]),
       ),
       Column(
-        children: info
+        children: widget.profile.boxes
             .map((pair) => Infobox(title: pair.first, content: pair.second))
             .toList(),
       ),
