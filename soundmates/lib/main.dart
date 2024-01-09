@@ -690,22 +690,76 @@ class _ProfilePageState extends State<ProfilePage> {
                     ))
                 .toList(),
           ),
-          ElevatedButton(
-            onPressed: () => showSocialPopup(context),
-            child: Text('Manage Socials'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => SpotifyorCustom()),
-              );
-            },
-            child: Text('Change Genres'),
-          ),
-          ElevatedButton(
-            onPressed: logout,
-            child: Text('Logout'),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: <Widget>[
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(6, 0, 6, 0),
+                    child: GestureDetector(
+                      onTap: () => showSocialPopup(context),
+                      child: Container(
+                        height: 50, // Set the height of the button
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Center(
+                          child: Text('Manage Socials',
+                              style: TextStyle(color: Colors.white)),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6),
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => SpotifyorCustom()),
+                        );
+                      },
+                      child: Container(
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Center(
+                          child: Text('Change Genres',
+                              style: TextStyle(color: Colors.white)),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(6, 0, 6, 0),
+                    child: GestureDetector(
+                      onTap: logout,
+                      child: Container(
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.secondary,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Center(
+                          child: Text('Logout',
+                              style: TextStyle(color: Colors.white)),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -2264,21 +2318,53 @@ class SpotifyorCustom extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ElevatedButton(
-              onPressed: () {
-                //to spotify
+            GestureDetector(
+              onTap: () {
+                //to do
               },
-              child: Text('Connect with Spotify'),
+              child: Container(
+                height: 50,
+                width: 250,
+                decoration: BoxDecoration(
+                  color: Color(0xFF1ED760),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Text(
+                    'Connect with Spotify',
+                    style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
             ),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
+            GestureDetector(
+              onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => GenreSelect()),
                 );
               },
-              child: Text('Choose my genres'),
+              child: Container(
+                height: 50,
+                width: 250,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Text(
+                    'Choose my genres',
+                    style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -2448,20 +2534,31 @@ class _GenreSelectState extends State<GenreSelect> {
           ],
         ),
       ),
-      bottomSheet: Container(
-        color: Colors.transparent,
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.7,
-          decoration:
-              BoxDecoration(color: Theme.of(context).colorScheme.background),
-          child: ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => MyHomePage()),
-              );
-            },
-            child: Text('Continue'),
+      bottomSheet: Padding(
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 8.0),
+        child: GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => MyHomePage()),
+            );
+          },
+          child: Container(
+            height: 50,
+            width: MediaQuery.of(context).size.width * 0.7,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Center(
+              child: Text(
+                'Continue',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold),
+              ),
+            ),
           ),
         ),
       ),
