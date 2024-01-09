@@ -2222,8 +2222,8 @@ class _CustomSocialDialogState extends State<CustomSocialDialog> {
     try {
       var credentials = await SecureStorage().getCredentials();
       var username = credentials['username'];
-      var response =
-          await http.get(Uri.parse('https://yourserver.com/api/mysocials?username=$username'));
+      var response = await http.get(
+          Uri.parse('https://yourserver.com/api/mysocials?username=$username'));
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
         setState(() {
@@ -2246,7 +2246,7 @@ class _CustomSocialDialogState extends State<CustomSocialDialog> {
       var username = credentials[0];
       var response = await http.post(
         Uri.parse('https://yourserver.com/api/update_mysocials'),
-        headers: {  
+        headers: {
           'Content-Type': 'application/json; charset=UTF-8',
         },
         body:
@@ -2358,10 +2358,35 @@ class CustomBoxDialog extends StatefulWidget {
 }
 
 class _CustomBoxDialogState extends State<CustomBoxDialog> {
-  String userTitle = '';
-  String userContent = '';
   TextEditingController textController1 = TextEditingController();
   TextEditingController textController2 = TextEditingController();
+
+  Future<void> sendBoxInfoToServer() async {
+    try {
+      var credentials = await SecureStorage().getCredentials();
+      var username = credentials['username'];
+      var response = await http.post(
+        Uri.parse('https://yourserver.com/api/addbox'),
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: json.encode({
+          'title': textController1.text,
+          'content': textController2.text,
+          'username': username
+        }),
+      );
+      if (response.statusCode == 200) {
+        print(response);
+        if (!mounted) return;
+        Navigator.of(context).pop();
+      } else {
+        print(response);
+      }
+    } catch (e) {
+      print(e);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2466,7 +2491,7 @@ class _CustomBoxDialogState extends State<CustomBoxDialog> {
                           padding: const EdgeInsets.fromLTRB(5, 0, 0, 0),
                           child: ElevatedButton(
                             onPressed: () {
-                              // Button 2 action
+                              sendBoxInfoToServer();
                             },
                             child: Text('Add Box'),
                           ),
