@@ -7,6 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
+import 'package:geolocator/geolocator.dart';
 
 class SecureStorage {
   final _storage = FlutterSecureStorage();
@@ -24,6 +25,18 @@ class SecureStorage {
 
   Future<void> clearCredential() async {
     await _storage.deleteAll();
+  }
+
+  Future<void> storeLocation(Position position) async {
+    String positionString = position.toString(); // Convert position to string
+    await _storage.write(key: 'position', value: positionString);
+  }
+
+  Future<Position> getLocation() async {
+    String? positionString = await _storage.read(key: 'position');
+    Map<String, dynamic> positionMap = jsonDecode(positionString!);
+    Position position = Position.fromMap(positionMap);
+    return position;
   }
 }
 
@@ -94,6 +107,12 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   var selectedIndex = 0;
+  bool _isFirstLoad = true;
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -101,9 +120,66 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  Future<void> _getLocationAndSendToServer() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        // Location services are not enabled, handle accordingly
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          // Permissions are denied, handle accordingly
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        // Permissions are permanently denied, handle accordingly
+        return;
+      }
+
+      Position position = await Geolocator.getCurrentPosition();
+      Position lastPosition = await SecureStorage().getLocation();
+      if (lastPosition.latitude != position.latitude ||
+          lastPosition.longitude != position.longitude) {
+        await SecureStorage().storeLocation(position);
+        await _sendLocationToServer(position);
+      }
+    } catch (e) {
+      // Handle exceptions
+    }
+  }
+
+  Future<void> _sendLocationToServer(Position position) async {
+    var credentials = await SecureStorage().getCredentials();
+    var username = credentials['username'];
+
+    await http.post(
+      Uri.parse('https://yourserver.com/api/update_location'),
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: {
+        'username': username,
+        'latitude': position.latitude.toString(),
+        'longitude': position.longitude.toString(),
+      },
+    );
+    // Handle the response from the server
+  }
+
   @override
   Widget build(BuildContext context) {
     Widget page;
+    if (_isFirstLoad) {
+      _getLocationAndSendToServer();
+      _isFirstLoad = false;
+    }
+
     switch (selectedIndex) {
       case 0:
         page = SwipePage();
@@ -622,7 +698,7 @@ class _ProfilePageState extends State<ProfilePage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => GenreSelect()),
+                MaterialPageRoute(builder: (context) => SpotifyorCustom()),
               );
             },
             child: Text('Change Genres'),
@@ -1265,13 +1341,20 @@ class _ProfilePicturesBoxState extends State<ProfilePicturesBox> {
             padding: const EdgeInsets.fromLTRB(0, 5, 0, 0),
             child: Row(
               children: [0, 1, 2]
-                  .map((i) => ProfilePic(pictures: pictures, currentindex: i))
+                  .map((i) => ProfilePic(
+                        pictures: pictures,
+                        currentindex: i,
+                        onImageUpload: fetchPictures,
+                      ))
                   .toList(),
             ),
           ),
           Row(
             children: [3, 4, 5]
-                .map((i) => ProfilePic(pictures: pictures, currentindex: i))
+                .map((i) => ProfilePic(
+                    pictures: pictures,
+                    currentindex: i,
+                    onImageUpload: fetchPictures))
                 .toList(),
           ),
         ]));
@@ -1281,8 +1364,12 @@ class _ProfilePicturesBoxState extends State<ProfilePicturesBox> {
 class ProfilePic extends StatelessWidget {
   final List<String> pictures;
   final int currentindex;
+  final Function onImageUpload;
 
-  ProfilePic({required this.pictures, required this.currentindex});
+  ProfilePic(
+      {required this.pictures,
+      required this.currentindex,
+      required this.onImageUpload});
 
   Future<void> uploadImage(String imagePath, String username) async {
     try {
@@ -1303,12 +1390,35 @@ class ProfilePic extends StatelessWidget {
 
       if (response.statusCode == 200) {
         print('Image uploaded successfully');
-        refreshProfile();
+        onImageUpload();
       } else {
         print('Failed to upload image');
       }
     } catch (e) {
       print('Failed to upload image');
+    }
+  }
+
+  Future<void> deleteImage(String username, String pictureUrl) async {
+    try {
+      var response = await http.post(
+        Uri.parse('https://yourserver.com/api/delete_picture'),
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode({
+          'username': username,
+          'pictureUrl': pictureUrl,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Image deleted successfully');
+      } else {
+        print('Failed to delete image');
+      }
+    } catch (e) {
+      print('Failed to delete image');
     }
   }
 
@@ -1366,20 +1476,44 @@ class ProfilePic extends StatelessWidget {
 
   Widget _buildPicture(BuildContext context, String pictureUrl) {
     return Expanded(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
-        child: Container(
-          width: 100,
-          height: 170,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10), // Rounded corners
-            image: DecorationImage(
-              image:
-                  NetworkImage(pictureUrl), // Replace with your network image
-              fit: BoxFit.cover,
+      child: Stack(
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
+            child: Container(
+              width: 100,
+              height: 170,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10), // Rounded corners
+                image: DecorationImage(
+                  image: NetworkImage(
+                      pictureUrl), // Replace with your network image
+                  fit: BoxFit.cover,
+                ),
+              ),
             ),
           ),
-        ),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: GestureDetector(
+              onTap: () async {
+                var credentials = await SecureStorage().getCredentials();
+                var username = credentials['username'];
+                await deleteImage(username!, pictureUrl);
+                onImageUpload();
+              },
+              child: Container(
+                color: Colors.black54,
+                child: Icon(
+                  Icons.close,
+                  size: 20,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1430,6 +1564,69 @@ class Infobox extends StatelessWidget {
                   ),
                 ],
               ))),
+    );
+  }
+}
+
+class MyInfobox extends StatelessWidget {
+  final String title;
+  final String content;
+  final VoidCallback onDelete;
+
+  MyInfobox(
+      {required this.title, required this.content, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
+      child: Stack(
+        children: [
+          Container(
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: Theme.of(context).colorScheme.surface),
+              child: Padding(
+                  padding: EdgeInsets.fromLTRB(10, 5, 10, 10),
+                  child: Column(
+                    children: [
+                      Container(
+                          width: MediaQuery.of(context).size.width,
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: Colors.white,
+                                width: 1.0,
+                              ),
+                            ),
+                          ),
+                          child: Text(title,
+                              style: TextStyle(
+                                fontFamily: 'Roboto',
+                                fontSize: 20,
+                                color: Colors.white,
+                              ))),
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width,
+                        child: Text(content,
+                            style: TextStyle(
+                              fontFamily: 'Roboto',
+                              fontSize: 16,
+                              color: Colors.white,
+                            )),
+                      ),
+                    ],
+                  ))),
+          Positioned(
+            right: 0,
+            top: 0,
+            child: IconButton(
+              icon: Icon(Icons.close, color: Colors.white),
+              onPressed: onDelete,
+            ),
+          )
+        ],
+      ),
     );
   }
 }
@@ -1642,6 +1839,8 @@ class SuggestionBox extends StatelessWidget {
   }
 }
 
+// these are the starting pages
+
 class IndexPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1832,7 +2031,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     Navigator.pushReplacement(
                       currentContext,
                       MaterialPageRoute(
-                        builder: (context) => MyHomePage(),
+                        builder: (context) => SpotifyorCustom(),
                       ),
                     );
                   } else {
@@ -2005,6 +2204,40 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
+class SpotifyorCustom extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Soundmates'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                //to spotify
+              },
+              child: Text('Connect with Spotify'),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => GenreSelect()),
+                );
+              },
+              child: Text('Choose my genres'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class GenreSelect extends StatefulWidget {
   @override
   State<GenreSelect> createState() => _GenreSelectState();
@@ -2094,6 +2327,7 @@ class _GenreSelectState extends State<GenreSelect> {
                   child: TypeAheadField<String>(
                     textFieldConfiguration: TextFieldConfiguration(
                       autofocus: true,
+                      style: TextStyle(color: Colors.black),
                       decoration: InputDecoration(
                         hintText: 'Search Genre',
                         prefixIcon: Icon(Icons.search),
@@ -2254,6 +2488,8 @@ class GenreBox extends StatelessWidget {
     );
   }
 }
+
+//THESE ARE THE DIALOGS
 
 // this one has only text
 class CustomMatchSocialDialog extends StatefulWidget {
@@ -2726,69 +2962,6 @@ class _CustomGenreAlertState extends State<CustomGenreAlert> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class MyInfobox extends StatelessWidget {
-  final String title;
-  final String content;
-  final VoidCallback onDelete;
-
-  MyInfobox(
-      {required this.title, required this.content, required this.onDelete});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
-      child: Stack(
-        children: [
-          Container(
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  color: Theme.of(context).colorScheme.surface),
-              child: Padding(
-                  padding: EdgeInsets.fromLTRB(10, 5, 10, 10),
-                  child: Column(
-                    children: [
-                      Container(
-                          width: MediaQuery.of(context).size.width,
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(
-                                color: Colors.white,
-                                width: 1.0,
-                              ),
-                            ),
-                          ),
-                          child: Text(title,
-                              style: TextStyle(
-                                fontFamily: 'Roboto',
-                                fontSize: 20,
-                                color: Colors.white,
-                              ))),
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width,
-                        child: Text(content,
-                            style: TextStyle(
-                              fontFamily: 'Roboto',
-                              fontSize: 16,
-                              color: Colors.white,
-                            )),
-                      ),
-                    ],
-                  ))),
-          Positioned(
-            right: 0,
-            top: 0,
-            child: IconButton(
-              icon: Icon(Icons.close, color: Colors.white),
-              onPressed: onDelete,
-            ),
-          )
-        ],
       ),
     );
   }
