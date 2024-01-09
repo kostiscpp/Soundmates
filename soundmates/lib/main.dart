@@ -484,13 +484,51 @@ class _MatchesPageState extends State<MatchesPage> {
   }
 }
 
-class ProfilePage extends StatelessWidget {
-  final List<Pair<String, String>> myinfo = [
+class ProfilePage extends StatefulWidget {
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  List<Pair<String, String>> myinfo = [
     Pair('This is a test',
         "This is some longer text to see what happens. The test of course continues"),
     Pair('This is the second box',
         "This is some longer text to see what happens. The test of course continues"),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchBoxesfromServer();
+  }
+
+  Future<void> fetchBoxesfromServer() async {
+    try {
+      var credentials = await SecureStorage().getCredentials();
+      String myUsername = credentials['username'] ?? '';
+      final response = await http.get(
+        Uri.parse('https://yourserver.com/api/infoboxes')
+            .replace(queryParameters: {
+          'username': myUsername,
+        }),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          myinfo = data.map<Pair<String, String>>((item) {
+            return Pair(item['title'], item['content']);
+          }).toList();
+        });
+      } else {
+        if (!mounted) return;
+        print('Error fetching data');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      print('Error fetching data');
+    }
+  }
 
   void showBoxPopup(BuildContext context) {
     showDialog(
@@ -882,7 +920,7 @@ class MatchBox extends StatelessWidget {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return CustomMatchSocialDialog(  
+        return CustomMatchSocialDialog(
           socials: socials,
           photoUrl: photoUrl,
         );
@@ -890,11 +928,10 @@ class MatchBox extends StatelessWidget {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap:() => _showSocials(context, socials, photoUrl),
+      onTap: () => _showSocials(context, socials, photoUrl),
       child: SizedBox(
           height: 80,
           child: Row(children: [
@@ -954,7 +991,7 @@ class NewMatchBox extends StatelessWidget {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return CustomMatchSocialDialog(  
+        return CustomMatchSocialDialog(
           socials: socials,
           photoUrl: photoUrl,
         );
@@ -1020,7 +1057,56 @@ class NewMatchBox extends StatelessWidget {
   }
 }
 
-class ProfileTopBox extends StatelessWidget {
+class ProfileTopBox extends StatefulWidget {
+  @override
+  State<ProfileTopBox> createState() => _ProfileTopBoxState();
+}
+
+class _ProfileTopBoxState extends State<ProfileTopBox> {
+  TextEditingController textController1 = TextEditingController();
+  TextEditingController textController2 = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    fetchDataFromServer();
+    textController1
+        .addListener(() => sendDataToServer(textController1.text, 'field1'));
+    textController2
+        .addListener(() => sendDataToServer(textController2.text, 'field2'));
+  }
+
+  void fetchDataFromServer() async {
+    try {
+      var response =
+          await http.get(Uri.parse('https://yourserver.com/api/profile_data'));
+      if (response.statusCode == 200) {
+        var data = json.decode(response.body);
+        setState(() {
+          textController1.text = data['nameAge'];
+          textController2.text = data['jobTitle'];
+        });
+      }
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  void sendDataToServer(String text, String fieldType) async {
+    try {
+      var response = await http.post(
+        Uri.parse('https://yourserver.com/api/profile_data'),
+        body: json.encode({'fieldType': fieldType, 'text': text}),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {});
+      }
+    } catch (e) {
+      print(e);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -1028,20 +1114,55 @@ class ProfileTopBox extends StatelessWidget {
       child: SizedBox(
           height: 80,
           child: Column(children: [
-            Text('Name, Age',
-                style: TextStyle(
+            TextField(
+              controller: textController1,
+              decoration: InputDecoration(
+                hintText: 'Name, Age',
+                hintStyle: TextStyle(
                   fontFamily: 'Roboto',
                   fontSize: 30,
                   color: Colors.white,
-                )),
-            Text('Job Title/School',
-                style: TextStyle(
+                ),
+                contentPadding: EdgeInsets.all(0),
+                isDense: true,
+                border: InputBorder.none,
+              ),
+              style: TextStyle(
+                fontFamily: 'Roboto',
+                fontSize: 30,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            TextField(
+              controller: textController2,
+              decoration: InputDecoration(
+                hintText: 'Job Title/School',
+                hintStyle: TextStyle(
                   fontFamily: 'Roboto',
                   fontSize: 20,
                   color: Colors.white,
-                )),
+                ),
+                contentPadding: EdgeInsets.all(0),
+                isDense: true,
+                border: InputBorder.none,
+              ),
+              style: TextStyle(
+                fontFamily: 'Roboto',
+                fontSize: 20,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ])),
     );
+  }
+
+  @override
+  void dispose() {
+    textController1.dispose();
+    textController2.dispose();
+    super.dispose();
   }
 }
 
@@ -2309,19 +2430,18 @@ class GenreBox extends StatelessWidget {
   }
 }
 
-
 class CustomMatchSocialDialog extends StatefulWidget {
   final String socials;
   final String photoUrl;
 
-  const CustomMatchSocialDialog({required this.socials, required this.photoUrl});
+  const CustomMatchSocialDialog(
+      {required this.socials, required this.photoUrl});
   @override
-  State<CustomMatchSocialDialog> createState() => _CustomMatchSocialDialogState();
+  State<CustomMatchSocialDialog> createState() =>
+      _CustomMatchSocialDialogState();
 }
 
 class _CustomMatchSocialDialogState extends State<CustomMatchSocialDialog> {
-
-
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -2393,4 +2513,3 @@ class _CustomMatchSocialDialogState extends State<CustomMatchSocialDialog> {
     );
   }
 }
-
