@@ -5,6 +5,8 @@ import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as path;
 
 class SecureStorage {
   final _storage = FlutterSecureStorage();
@@ -530,6 +532,10 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<void> refreshBoxes() async {
+    await fetchBoxesfromServer();
+  }
+
   void showBoxPopup(BuildContext context) {
     showDialog(
       context: context,
@@ -545,6 +551,15 @@ class _ProfilePageState extends State<ProfilePage> {
       builder: (BuildContext context) {
         return CustomSocialDialog();
       },
+    );
+  }
+
+  Future<void> logout() async {
+    await SecureStorage().clearCredential();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => IndexPage()),
+      (Route<dynamic> route) => false,
     );
   }
 
@@ -588,9 +603,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             }),
                           );
                           if (response.statusCode == 200) {
-                            setState(() {
-                              myinfo.remove(pair);
-                            });
+                            await refreshBoxes();
                           } else {
                             print('Error deleting box');
                           }
@@ -605,15 +618,18 @@ class _ProfilePageState extends State<ProfilePage> {
             onPressed: () => showSocialPopup(context),
             child: Text('Manage Socials'),
           ),
-          // This is a temporary button for testing
           ElevatedButton(
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => IndexPage()),
+                MaterialPageRoute(builder: (context) => GenreSelect()),
               );
             },
-            child: Text('Go to index'),
+            child: Text('Change Genres'),
+          ),
+          ElevatedButton(
+            onPressed: logout,
+            child: Text('Logout'),
           ),
         ],
       ),
@@ -1196,11 +1212,36 @@ class _ProfileTopBoxState extends State<ProfileTopBox> {
   }
 }
 
-class ProfilePicturesBox extends StatelessWidget {
-  final List<String> pictures = [
-    'assets/images/dalle.png',
-    'assets/images/dalle.png'
-  ];
+class ProfilePicturesBox extends StatefulWidget {
+  @override
+  State<ProfilePicturesBox> createState() => _ProfilePicturesBoxState();
+}
+
+class _ProfilePicturesBoxState extends State<ProfilePicturesBox> {
+  List<String> pictures = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchPictures();
+  }
+
+  Future<void> fetchPictures() async {
+    try {
+      var credentials = await SecureStorage().getCredentials();
+      var username = credentials['username'];
+      var response = await http.get(Uri.parse(
+          'https://yourserver.com/api/get_pictures?username=$username'));
+
+      if (response.statusCode == 200) {
+        setState(() {
+          pictures = List<String>.from(json.decode(response.body));
+        });
+      }
+    } catch (e) {
+      print('Error fetching pictures');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1223,19 +1264,15 @@ class ProfilePicturesBox extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(0, 5, 0, 0),
             child: Row(
-              children: [
-                ProfilePic(pictures: pictures, currentindex: 0),
-                ProfilePic(pictures: pictures, currentindex: 1),
-                ProfilePic(pictures: pictures, currentindex: 2),
-              ],
+              children: [0, 1, 2]
+                  .map((i) => ProfilePic(pictures: pictures, currentindex: i))
+                  .toList(),
             ),
           ),
           Row(
-            children: [
-              ProfilePic(pictures: pictures, currentindex: 3),
-              ProfilePic(pictures: pictures, currentindex: 4),
-              ProfilePic(pictures: pictures, currentindex: 5),
-            ],
+            children: [3, 4, 5]
+                .map((i) => ProfilePic(pictures: pictures, currentindex: i))
+                .toList(),
           ),
         ]));
   }
@@ -1246,6 +1283,34 @@ class ProfilePic extends StatelessWidget {
   final int currentindex;
 
   ProfilePic({required this.pictures, required this.currentindex});
+
+  Future<void> uploadImage(String imagePath, String username) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('https://yourserver.com/api/upload_picture'),
+      );
+      request.fields['username'] = username;
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'picture',
+          imagePath,
+          filename: path.basename(imagePath),
+        ),
+      );
+
+      var response = await request.send();
+
+      if (response.statusCode == 200) {
+        print('Image uploaded successfully');
+        refreshProfile();
+      } else {
+        print('Failed to upload image');
+      }
+    } catch (e) {
+      print('Failed to upload image');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1265,43 +1330,58 @@ class ProfilePic extends StatelessWidget {
         ),
       );
     } else if (pictures.length - currentindex - 1 == -1) {
-      print('stop $currentindex');
-      return Expanded(
-        child: Padding(
-            padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
+      return _buildAddButton(context);
+    } else {
+      return _buildPicture(context, pictures[currentindex]);
+    }
+  }
+
+  Widget _buildAddButton(BuildContext context) {
+    return Expanded(
+      child: Padding(
+          padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
+          child: GestureDetector(
+            onTap: () async {
+              final ImagePicker picker = ImagePicker();
+              final XFile? image =
+                  await picker.pickImage(source: ImageSource.gallery);
+              if (image != null) {
+                var credentials = await SecureStorage().getCredentials();
+                var username = credentials['username'];
+                uploadImage(image.path, username!);
+              }
+            },
             child: Container(
               width: 100,
               height: 170,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
-                image: DecorationImage(
-                  image: AssetImage(
-                      'assets/images/addimage.png'), // Local asset image
-                  fit: BoxFit.cover,
-                ),
+                color: Colors.grey,
               ),
-            )),
-      );
-    } else {
-      print('bye $currentindex');
-      return Expanded(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
-          child: Container(
-            width: 100,
-            height: 170,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10), // Rounded corners
-              image: DecorationImage(
-                image: AssetImage(
-                    pictures[currentindex]), // Replace with your network image
-                fit: BoxFit.cover,
-              ),
+              child: Icon(Icons.add),
+            ),
+          )),
+    );
+  }
+
+  Widget _buildPicture(BuildContext context, String pictureUrl) {
+    return Expanded(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
+        child: Container(
+          width: 100,
+          height: 170,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10), // Rounded corners
+            image: DecorationImage(
+              image:
+                  NetworkImage(pictureUrl), // Replace with your network image
+              fit: BoxFit.cover,
             ),
           ),
         ),
-      );
-    }
+      ),
+    );
   }
 }
 
@@ -1931,7 +2011,7 @@ class GenreSelect extends StatefulWidget {
 }
 
 class _GenreSelectState extends State<GenreSelect> {
-  final List<String> genres = [
+  List<String> genres = [
     'Rock',
     'Pop',
     'Hip Hop',
@@ -1965,6 +2045,32 @@ class _GenreSelectState extends State<GenreSelect> {
   ];
 
   List<String> filteredGenres = [];
+
+  Future<List<String>> fetchGenres() async {
+    try {
+      final response =
+          await http.get(Uri.parse('https://yourserver.com/genres'));
+      if (response.statusCode == 200) {
+        List<dynamic> genresJson = json.decode(response.body);
+        return genresJson.map((genre) => genre.toString()).toList();
+      } else {
+        throw Exception('Failed to load genres');
+      }
+    } catch (e) {
+      print(e);
+      return [];
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    fetchGenres().then((fetchedGenres) {
+      setState(() {
+        genres = fetchedGenres;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2296,7 +2402,7 @@ class _CustomSocialDialogState extends State<CustomSocialDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       backgroundColor: Colors.transparent,
       child: Container(
-        height: 300,
+        height: 350,
         width: MediaQuery.of(context).size.width * 0.8,
         decoration: BoxDecoration(
           color: Colors.transparent,
