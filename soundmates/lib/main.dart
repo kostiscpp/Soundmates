@@ -933,39 +933,77 @@ class _PhotoWidgetState extends State<PhotoWidget> {
                 color: Colors.white,
               ),
             )),
-        Align(
-          alignment: Alignment.bottomCenter,
+        Positioned(
+          bottom: 10,
+          left: 0,
+          right: 0,
           child: Container(
             padding: EdgeInsets.all(16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => widget.onButtonPressed(
-                        widget.profile, 'reload'), // Button 1 action
-                    child: Text('Reload'),
+                  child: Center(
+                    // Center the IconButton within the Expanded widget
+                    child: SizedBox(
+                      width: 50, // Width of the icon
+                      height: 50, // Height of the icon
+                      child: IconButton(
+                        icon: Image.asset('assets/icons/Retry.png'),
+                        onPressed: () => widget.onButtonPressed(
+                            widget.profile, 'reload'), // Button 1 action
+                        iconSize: 50,
+                        padding: EdgeInsets.zero, // Remove any internal padding
+                      ),
+                    ),
                   ),
                 ),
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: () =>
-                        widget.onButtonPressed(widget.profile, 'reject'),
-                    child: Text('Reject'),
+                  child: Center(
+                    // Center the IconButton within the Expanded widget
+                    child: SizedBox(
+                      width: 50, // Width of the icon
+                      height: 50, // Height of the icon
+                      child: IconButton(
+                        icon: Image.asset('assets/icons/Reject.png'),
+                        onPressed: () => widget.onButtonPressed(
+                            widget.profile, 'reject'), // Button 1 action
+                        iconSize: 50,
+                        padding: EdgeInsets.zero, // Remove any internal padding
+                      ),
+                    ),
                   ),
                 ),
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: () =>
-                        widget.onButtonPressed(widget.profile, 'like'),
-                    child: Text('Like'),
+                  child: Center(
+                    // Center the IconButton within the Expanded widget
+                    child: SizedBox(
+                      width: 50, // Width of the icon
+                      height: 50, // Height of the icon
+                      child: IconButton(
+                        icon: Image.asset('assets/icons/Like.png'),
+                        onPressed: () => widget.onButtonPressed(
+                            widget.profile, 'like'), // Button 1 action
+                        iconSize: 50,
+                        padding: EdgeInsets.zero, // Remove any internal padding
+                      ),
+                    ),
                   ),
                 ),
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: () =>
-                        widget.onButtonPressed(widget.profile, 'superlike'),
-                    child: Text('SuperLike'),
+                  child: Center(
+                    // Center the IconButton within the Expanded widget
+                    child: SizedBox(
+                      width: 50, // Width of the icon
+                      height: 50, // Height of the icon
+                      child: IconButton(
+                        icon: Image.asset('assets/icons/Favourite.png'),
+                        onPressed: () => widget.onButtonPressed(
+                            widget.profile, 'superlike'), // Button 1 action
+                        iconSize: 50,
+                        padding: EdgeInsets.zero, // Remove any internal padding
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -976,16 +1014,22 @@ class _PhotoWidgetState extends State<PhotoWidget> {
         Positioned(
           right: 30,
           top: 480,
-          child: ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        MoreInfoPage(profile: widget.profile)),
-              );
-            },
-            child: Text('More Info'),
+          child: SizedBox(
+            width: 50,
+            height: 50,
+            child: IconButton(
+              icon: Image.asset('assets/icons/More_Info.png'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          MoreInfoPage(profile: widget.profile)),
+                );
+              },
+              iconSize: 50,
+              padding: EdgeInsets.zero,
+            ),
           ),
         ),
       ],
@@ -1703,12 +1747,17 @@ class _MoreInfoPageState extends State<MoreInfoPage> {
               ),
             ),
           ),
-          ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context,
-                    MaterialPageRoute(builder: (context) => MyHomePage()));
-              },
-              child: Icon(Icons.arrow_downward))
+          SizedBox(
+            width: MediaQuery.of(context).size.width * 0.15,
+            child: IconButton(
+                icon: Image.asset('assets/icons/Less_Info.png'),
+                onPressed: () {
+                  Navigator.pop(context,
+                      MaterialPageRoute(builder: (context) => MyHomePage()));
+                },
+                iconSize: 25,
+                padding: EdgeInsets.zero),
+          ),
         ]),
       ),
       Column(
