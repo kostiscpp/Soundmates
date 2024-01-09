@@ -568,7 +568,37 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           Column(
             children: myinfo
-                .map((pair) => Infobox(title: pair.first, content: pair.second))
+                .map((pair) => MyInfobox(
+                      title: pair.first,
+                      content: pair.second,
+                      onDelete: () async {
+                        var credentials =
+                            await SecureStorage().getCredentials();
+                        var username = credentials['username'];
+                        try {
+                          var response = await http.post(
+                            Uri.parse('https://yourserver.com/api/delete_box'),
+                            headers: {
+                              'Content-Type': 'application/json; charset=UTF-8',
+                            },
+                            body: jsonEncode({
+                              'username': username,
+                              'title': pair.first,
+                              'content': pair.second,
+                            }),
+                          );
+                          if (response.statusCode == 200) {
+                            setState(() {
+                              myinfo.remove(pair);
+                            });
+                          } else {
+                            print('Error deleting box');
+                          }
+                        } catch (e) {
+                          print('Error deleting box');
+                        }
+                      },
+                    ))
                 .toList(),
           ),
           ElevatedButton(
@@ -2590,6 +2620,69 @@ class _CustomGenreAlertState extends State<CustomGenreAlert> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class MyInfobox extends StatelessWidget {
+  final String title;
+  final String content;
+  final VoidCallback onDelete;
+
+  MyInfobox(
+      {required this.title, required this.content, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
+      child: Stack(
+        children: [
+          Container(
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: Theme.of(context).colorScheme.surface),
+              child: Padding(
+                  padding: EdgeInsets.fromLTRB(10, 5, 10, 10),
+                  child: Column(
+                    children: [
+                      Container(
+                          width: MediaQuery.of(context).size.width,
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: Colors.white,
+                                width: 1.0,
+                              ),
+                            ),
+                          ),
+                          child: Text(title,
+                              style: TextStyle(
+                                fontFamily: 'Roboto',
+                                fontSize: 20,
+                                color: Colors.white,
+                              ))),
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width,
+                        child: Text(content,
+                            style: TextStyle(
+                              fontFamily: 'Roboto',
+                              fontSize: 16,
+                              color: Colors.white,
+                            )),
+                      ),
+                    ],
+                  ))),
+          Positioned(
+            right: 0,
+            top: 0,
+            child: IconButton(
+              icon: Icon(Icons.close, color: Colors.white),
+              onPressed: onDelete,
+            ),
+          )
+        ],
       ),
     );
   }
