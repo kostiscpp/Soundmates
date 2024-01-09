@@ -1420,132 +1420,6 @@ class Pair<T, U> {
   Pair(this.first, this.second);
 }
 
-class CustomBoxDialog extends StatefulWidget {
-  @override
-  State<CustomBoxDialog> createState() => _CustomBoxDialogState();
-}
-
-class _CustomBoxDialogState extends State<CustomBoxDialog> {
-  String userTitle = '';
-  String userContent = '';
-  TextEditingController textController1 = TextEditingController();
-  TextEditingController textController2 = TextEditingController();
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-            width: MediaQuery.of(context).size.width * 0.8,
-            height: 150,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.primary,
-                width: 1.0,
-              ),
-              color: Theme.of(context).colorScheme.background,
-            ),
-            child: Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
-                      child: Container(
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              color: Theme.of(context).colorScheme.surface),
-                          child: Padding(
-                              padding: EdgeInsets.fromLTRB(10, 5, 10, 10),
-                              child: Column(
-                                children: [
-                                  Container(
-                                      width: MediaQuery.of(context).size.width,
-                                      decoration: BoxDecoration(
-                                        border: Border(
-                                          bottom: BorderSide(
-                                            color: Colors.white,
-                                            width: 1.0,
-                                          ),
-                                        ),
-                                      ),
-                                      child: TextField(
-                                        controller: textController1,
-                                        decoration: InputDecoration(
-                                          hintText: "Title",
-                                          hintStyle: TextStyle(
-                                              color: Colors.white,
-                                              fontFamily: 'Roboto',
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.normal),
-                                          contentPadding: EdgeInsets.all(0),
-                                          isDense: true,
-                                        ),
-                                        style: TextStyle(
-                                          fontFamily: 'Roboto',
-                                          fontSize: 20,
-                                          color: Colors.white,
-                                        ),
-                                      )),
-                                  SizedBox(
-                                    width: MediaQuery.of(context).size.width,
-                                    child: TextField(
-                                      controller: textController2,
-                                      decoration: InputDecoration(
-                                          border: InputBorder.none,
-                                          hintText:
-                                              "Tell us something about you!!!",
-                                          hintStyle: TextStyle(
-                                            color: Colors.white,
-                                            fontFamily: 'Roboto',
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.normal,
-                                          ),
-                                          contentPadding: EdgeInsets.all(0),
-                                          isDense: true),
-                                      style: TextStyle(
-                                        fontFamily: 'Roboto',
-                                        fontSize: 16,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ))),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(0, 0, 5, 0),
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => SuggestionPanel()));
-                            },
-                            child: Text('Suggest'),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(5, 0, 0, 0),
-                          child: ElevatedButton(
-                            onPressed: () {
-                              // Button 2 action
-                            },
-                            child: Text('Add Box'),
-                          ),
-                        )
-                      ],
-                    )
-                  ],
-                ))));
-  }
-}
-
 class SuggestionPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -1655,99 +1529,6 @@ class SuggestionBox extends StatelessWidget {
                 textAlign: TextAlign.left,
               ),
             )));
-  }
-}
-
-class CustomSocialDialog extends StatefulWidget {
-  @override
-  State<CustomSocialDialog> createState() => _CustomSocialDialogState();
-}
-
-class _CustomSocialDialogState extends State<CustomSocialDialog> {
-  String socials = '';
-  TextEditingController textController = TextEditingController();
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      backgroundColor: Colors.transparent,
-      child: Container(
-        height: 300,
-        width: MediaQuery.of(context).size.width * 0.8,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          children: [
-            TipBox(
-                tip:
-                    'This is where your Matches will reach you. If you change your mind you can always change it later!'),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.primary,
-                    width: 1.0,
-                  ),
-                  color: Theme.of(context).colorScheme.background,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 4, // 30% of space
-                        child: Container(
-                          height: 150,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            image: DecorationImage(
-                              image: AssetImage('assets/images/dalle.png'),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 6, // 70% of space
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
-                          child: TextField(
-                            controller: textController,
-                            decoration: InputDecoration(
-                              hintText: 'Add your socials here!',
-                              hintStyle: TextStyle(
-                                color: Colors.white,
-                                fontFamily: 'Roboto',
-                                fontSize: 16,
-                                fontWeight: FontWeight.normal,
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.all(0),
-                              isDense: true,
-                            ),
-                            maxLines: 5,
-                            style: TextStyle(
-                              fontFamily: 'Roboto',
-                              fontSize: 16,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 
@@ -2269,6 +2050,434 @@ class _GenreSelectState extends State<GenreSelect> {
   }
 }
 
+class GenreBox extends StatelessWidget {
+  final String genre;
+  final double percentage;
+
+  const GenreBox({
+    required this.genre,
+    required this.percentage,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
+      child: GestureDetector(
+        onTap: () {
+          // Handle suggestion selection here
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return CustomGenreAlert(genre: genre);
+            },
+          );
+        },
+        child: Container(
+          height: 70,
+          width: 300,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                child: Row(
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        "$genre: \t\t ${percentage.toInt()}%",
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                top: 5,
+                right: 5,
+                child: GestureDetector(
+                  onTap: () {
+                    // Handle the tap on the close button
+                    print('Close button tapped');
+                  },
+                  child: Icon(Icons.close, size: 20, color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// this one has only text
+class CustomMatchSocialDialog extends StatefulWidget {
+  final String socials;
+  final String photoUrl;
+
+  const CustomMatchSocialDialog(
+      {required this.socials, required this.photoUrl});
+  @override
+  State<CustomMatchSocialDialog> createState() =>
+      _CustomMatchSocialDialogState();
+}
+
+class _CustomMatchSocialDialogState extends State<CustomMatchSocialDialog> {
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      backgroundColor: Colors.transparent,
+      child: Container(
+        height: 300,
+        width: MediaQuery.of(context).size.width * 0.8,
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 1.0,
+                  ),
+                  color: Theme.of(context).colorScheme.background,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 4, // 30% of space
+                        child: Container(
+                          height: 150,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            image: DecorationImage(
+                              image: NetworkImage(widget.photoUrl),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 6, // 70% of space
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
+                          child: Text(
+                            widget.socials,
+                            maxLines: 5,
+                            style: TextStyle(
+                              fontFamily: 'Roboto',
+                              fontSize: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+//this one has a tipbox and a textfield
+class CustomSocialDialog extends StatefulWidget {
+  @override
+  State<CustomSocialDialog> createState() => _CustomSocialDialogState();
+}
+
+class _CustomSocialDialogState extends State<CustomSocialDialog> {
+  TextEditingController textController = TextEditingController();
+  String photoUrl = '';
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchSocialData();
+  }
+
+  Future<void> fetchSocialData() async {
+    try {
+      var credentials = await SecureStorage().getCredentials();
+      var username = credentials['username'];
+      var response =
+          await http.get(Uri.parse('https://yourserver.com/api/mysocials?username=$username'));
+      if (response.statusCode == 200) {
+        var data = json.decode(response.body);
+        setState(() {
+          textController.text = data['socials'];
+          photoUrl = data['photoUrl'];
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      print(e);
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> sendSocialToServer() async {
+    try {
+      var credentials = await SecureStorage().getCredentials();
+      var username = credentials[0];
+      var response = await http.post(
+        Uri.parse('https://yourserver.com/api/update_mysocials'),
+        headers: {  
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body:
+            json.encode({'socials': textController.text, 'username': username}),
+      );
+      if (response.statusCode == 200) {
+        print(response);
+      }
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      backgroundColor: Colors.transparent,
+      child: Container(
+        height: 300,
+        width: MediaQuery.of(context).size.width * 0.8,
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          children: [
+            TipBox(
+                tip:
+                    'This is where your Matches will reach you. If you change your mind you can always change it later!'),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 1.0,
+                  ),
+                  color: Theme.of(context).colorScheme.background,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 4, // 30% of space
+                        child: Container(
+                          height: 150,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            image: DecorationImage(
+                              image: AssetImage('assets/images/dalle.png'),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 6, // 70% of space
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
+                          child: TextField(
+                            controller: textController,
+                            decoration: InputDecoration(
+                              hintText: 'Add your socials here!',
+                              hintStyle: TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'Roboto',
+                                fontSize: 16,
+                                fontWeight: FontWeight.normal,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.all(0),
+                              isDense: true,
+                            ),
+                            maxLines: 5,
+                            style: TextStyle(
+                              fontFamily: 'Roboto',
+                              fontSize: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await sendSocialToServer();
+                if (!mounted) return;
+                Navigator.of(context).pop();
+              },
+              child: Text('Save'),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class CustomBoxDialog extends StatefulWidget {
+  @override
+  State<CustomBoxDialog> createState() => _CustomBoxDialogState();
+}
+
+class _CustomBoxDialogState extends State<CustomBoxDialog> {
+  String userTitle = '';
+  String userContent = '';
+  TextEditingController textController1 = TextEditingController();
+  TextEditingController textController2 = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+            width: MediaQuery.of(context).size.width * 0.8,
+            height: 150,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary,
+                width: 1.0,
+              ),
+              color: Theme.of(context).colorScheme.background,
+            ),
+            child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
+                      child: Container(
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              color: Theme.of(context).colorScheme.surface),
+                          child: Padding(
+                              padding: EdgeInsets.fromLTRB(10, 5, 10, 10),
+                              child: Column(
+                                children: [
+                                  Container(
+                                      width: MediaQuery.of(context).size.width,
+                                      decoration: BoxDecoration(
+                                        border: Border(
+                                          bottom: BorderSide(
+                                            color: Colors.white,
+                                            width: 1.0,
+                                          ),
+                                        ),
+                                      ),
+                                      child: TextField(
+                                        controller: textController1,
+                                        decoration: InputDecoration(
+                                          hintText: "Title",
+                                          hintStyle: TextStyle(
+                                              color: Colors.white,
+                                              fontFamily: 'Roboto',
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.normal),
+                                          contentPadding: EdgeInsets.all(0),
+                                          isDense: true,
+                                        ),
+                                        style: TextStyle(
+                                          fontFamily: 'Roboto',
+                                          fontSize: 20,
+                                          color: Colors.white,
+                                        ),
+                                      )),
+                                  SizedBox(
+                                    width: MediaQuery.of(context).size.width,
+                                    child: TextField(
+                                      controller: textController2,
+                                      decoration: InputDecoration(
+                                          border: InputBorder.none,
+                                          hintText:
+                                              "Tell us something about you!!!",
+                                          hintStyle: TextStyle(
+                                            color: Colors.white,
+                                            fontFamily: 'Roboto',
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.normal,
+                                          ),
+                                          contentPadding: EdgeInsets.all(0),
+                                          isDense: true),
+                                      style: TextStyle(
+                                        fontFamily: 'Roboto',
+                                        fontSize: 16,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ))),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(0, 0, 5, 0),
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => SuggestionPanel()));
+                            },
+                            child: Text('Suggest'),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(5, 0, 0, 0),
+                          child: ElevatedButton(
+                            onPressed: () {
+                              // Button 2 action
+                            },
+                            child: Text('Add Box'),
+                          ),
+                        )
+                      ],
+                    )
+                  ],
+                ))));
+  }
+}
+
 class CustomGenreAlert extends StatefulWidget {
   final String genre;
 
@@ -2350,159 +2559,6 @@ class _CustomGenreAlertState extends State<CustomGenreAlert> {
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class GenreBox extends StatelessWidget {
-  final String genre;
-  final double percentage;
-
-  const GenreBox({
-    required this.genre,
-    required this.percentage,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
-      child: GestureDetector(
-        onTap: () {
-          // Handle suggestion selection here
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return CustomGenreAlert(genre: genre);
-            },
-          );
-        },
-        child: Container(
-          height: 70,
-          width: 300,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Stack(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-                child: Row(
-                  children: [
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        "$genre: \t\t ${percentage.toInt()}%",
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Positioned(
-                top: 5,
-                right: 5,
-                child: GestureDetector(
-                  onTap: () {
-                    // Handle the tap on the close button
-                    print('Close button tapped');
-                  },
-                  child: Icon(Icons.close, size: 20, color: Colors.white),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class CustomMatchSocialDialog extends StatefulWidget {
-  final String socials;
-  final String photoUrl;
-
-  const CustomMatchSocialDialog(
-      {required this.socials, required this.photoUrl});
-  @override
-  State<CustomMatchSocialDialog> createState() =>
-      _CustomMatchSocialDialogState();
-}
-
-class _CustomMatchSocialDialogState extends State<CustomMatchSocialDialog> {
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      backgroundColor: Colors.transparent,
-      child: Container(
-        height: 300,
-        width: MediaQuery.of(context).size.width * 0.8,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          children: [
-            TipBox(
-                tip:
-                    'This is where your Matches will reach you. If you change your mind you can always change it later!'),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.primary,
-                    width: 1.0,
-                  ),
-                  color: Theme.of(context).colorScheme.background,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 4, // 30% of space
-                        child: Container(
-                          height: 150,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            image: DecorationImage(
-                              image: NetworkImage(widget.photoUrl),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 6, // 70% of space
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
-                          child: Text(
-                            widget.socials,
-                            maxLines: 5,
-                            style: TextStyle(
-                              fontFamily: 'Roboto',
-                              fontSize: 16,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ),
