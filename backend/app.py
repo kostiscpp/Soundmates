@@ -158,22 +158,43 @@ def update_profile():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/delete_user/<string:username>', methods=['DELETE'])
-def delete_profile(username):
+@app.route('/api/delete_picture', methods=['POST'])
+def delete_picture():
+    data = request.json
+    username = data.get('username')
+    picture_url = data.get('picture_url')
+
+    if not username or not picture_url:
+        return jsonify({'message': 'Username and picture URL are required'}), 400
+
     cur = mysql.connection.cursor()
     try:
-       # SQL query to delete a user
-       cur.execute("DELETE FROM user WHERE username = %s", (username,))
-       mysql.connection.commit()
-       if cur.rowcount > 0:
-           return jsonify({'message': 'User deleted successfully'}), 200
-       else:
-           return jsonify({'message': 'User not found'}), 404
-    except Exception as e:
-        # Handle any exception that occurs during the operation
-        return jsonify({'error': str(e)}), 500
-    finally:
+        # Delete the specified picture
+        cur.execute("DELETE FROM photo WHERE photo_url = %s AND user_id = (SELECT user_id FROM user WHERE username = %s)", (picture_url, username))
+        mysql.connection.commit()
+
+        # Check if the file was actually deleted
+        if cur.rowcount == 0:
+            return jsonify({'message': 'Picture not found'}), 404
+
+        # Retrieve the remaining pictures and adjust their order
+        cur.execute("SELECT photo_url, `order` FROM photo WHERE user_id = (SELECT user_id FROM user WHERE username = %s) ORDER BY `order`", (username,))
+        remaining_pictures = cur.fetchall()
+
+        for idx, (url, order) in enumerate(remaining_pictures):
+            new_order = idx + 1  # New order starts from 1
+            if new_order != order:
+                # Update the order of the picture
+                cur.execute("UPDATE photo SET `order` = %s WHERE photo_url = %s AND user_id = (SELECT user_id FROM user WHERE username = %s)", (new_order, url, username))
+                mysql.connection.commit()
+
         cur.close()
+        return jsonify({'message': 'Picture deleted successfully'}), 200
+
+    except Exception as e:
+        cur.close()
+        return jsonify({'error': str(e)}), 500
+
 
 
 @app.route('/matches', methods=['GET'])
@@ -227,6 +248,194 @@ def liked_you():
     rv = cur.fetchall()
     cur.close()
     return jsonify([{"username":x[0],"photo_url":x[1]} for x in rv])
+#endpoint to get the user's photos
+
+@app.route('/api/get_pictures', methods=['GET'])
+def get_pictures():
+    username = request.args.get('username')
+    if not username:
+        return jsonify({'message': 'Username is required'}), 400
+
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT photo_url FROM photo WHERE user_id = (SELECT user_id FROM user WHERE username = %s)", (username,))
+    photos_data = cur.fetchall()
+    cur.close()
+
+    if photos_data:
+        pictures = [photo[0] for photo in photos_data]
+        return jsonify(pictures)
+    else:
+        return jsonify({'message': 'No pictures found'}), 404
+
+#endpoint to upload the user's photos
+from werkzeug.utils import secure_filename
+import os
+
+# Configuration for file uploads
+UPLOAD_FOLDER = '/path/to/upload/directory'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/api/upload_picture', methods=['POST'])
+def upload_picture():
+    if 'picture' not in request.files:
+        return jsonify({'message': 'No picture part'}), 400
+    file = request.files['picture']
+    username = request.form.get('username')
+    if not username:
+        return jsonify({'message': 'Username is required'}), 400
+    if file.filename == '':
+        return jsonify({'message': 'No selected file'}), 400
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+
+        cur = mysql.connection.cursor()
+
+        # Get the current maximum order value
+        cur.execute("SELECT MAX(`order`) FROM photo WHERE user_id = (SELECT user_id FROM user WHERE username = %s)", (username,))
+        max_order_result = cur.fetchone()
+        next_order = max_order_result[0] + 1 if max_order_result and max_order_result[0] is not None else 1
+
+        # Insert the new photo with the next order value
+        cur.execute("INSERT INTO photo (user_id, `order`, photo_url) VALUES ((SELECT user_id FROM user WHERE username = %s), %s, %s)", (username, next_order, file_path))
+        mysql.connection.commit()
+        cur.close()
+
+        return jsonify({'message': 'File uploaded successfully'}), 200
+    else:
+        return jsonify({'message': 'Invalid file format'}), 400
+
+
+#delete picture 
+@app.route('/api/delete_picture', methods=['POST'])
+def delete_picture():
+    data = request.json
+    username = data.get('username')
+    picture_url = data.get('picture_url')
+
+    if not username or not picture_url:
+        return jsonify({'message': 'Username and picture URL are required'}), 400
+
+    cur = mysql.connection.cursor()
+    # Delete the picture from the database (and optionally from the file system)
+    # Database logic here
+    cur.execute("DELETE FROM photo WHERE photo_url = %s AND user_id = (SELECT user_id FROM user WHERE username = %s)", (picture_url, username))
+    mysql.connection.commit()
+    deleted_rows = cur.rowcount
+    cur.close()
+
+    if deleted_rows > 0:
+        # Optionally delete the file from the file system
+        return jsonify({'message': 'Picture deleted successfully'}), 200
+    else:
+        return jsonify({'message': 'Picture not found'}), 404
+
+#endpoint to get all the genres 
+
+@app.route('/genres', methods=['GET'])
+def get_genres():
+    cur = mysql.connection.cursor()
+    try:
+        # SQL query to fetch genres
+        cur.execute("SELECT genre FROM genre")
+        genres_data = cur.fetchall()
+        # Extracting genres from the query result
+        genres = [genre[0] for genre in genres_data]
+        return jsonify({'genres': genres})
+    except Exception as e:
+        # Handle any exceptions that occur
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cur.close()
+
+#endpoint to get the socials 
+
+@app.route('/api/mysocials', methods=['GET'])
+def get_socials():
+    username = request.args.get('username')
+    if not username:
+        return jsonify({'message': 'Username is required'}), 400
+
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        SELECT s.social_info, p.photo_url 
+        FROM socials s
+        JOIN user u ON u.user_id = s.user_id
+        LEFT JOIN photo p ON u.user_id = p.user_id 
+        WHERE u.username = %s
+        ORDER BY p.order
+        LIMIT 1
+    """, (username,))
+    user_data = cur.fetchone()
+    cur.close()
+
+    if user_data:
+        social_data = {
+            'socials': user_data[0],
+            'photoUrl': user_data[1]
+        }
+        return jsonify(social_data)
+    else:
+        return jsonify({'message': 'User not found'}), 404
+
+#endpoint to update the socials 
+@app.route('/api/update_mysocials', methods=['POST'])
+def update_socials():
+    data = request.json
+    username = data.get('username')
+    socials = data.get('socials')
+
+    if not username or socials is None:
+        return jsonify({'message': 'Username and socials are required'}), 400
+
+    cur = mysql.connection.cursor()
+    cur.execute("""
+        UPDATE socials 
+        SET social_info = %s 
+        WHERE user_id = (SELECT user_id FROM user WHERE username = %s)
+    """, (socials, username))
+    mysql.connection.commit()
+    updated_rows = cur.rowcount
+    cur.close()
+
+    if updated_rows > 0:
+        return jsonify({'message': 'Social data updated successfully'}), 200
+    else:
+        return jsonify({'message': 'User not found'}), 404
+
+#endpoint to add box
+@app.route('/api/addbox', methods=['POST'])
+def add_box():
+    data = request.json
+    title = data.get('title')
+    content = data.get('content')
+    username = data.get('username')
+
+    if not all([title, content, username]):
+        return jsonify({'message': 'Title, content, and username are required'}), 400
+
+    cur = mysql.connection.cursor()
+
+    # Fetching the user_id based on the username
+    cur.execute("SELECT user_id FROM user WHERE username = %s", (username,))
+    user_id_result = cur.fetchone()
+
+    if user_id_result:
+        user_id = user_id_result[0]
+        # Inserting the new box into the database
+        cur.execute("INSERT INTO box (user_id, title, description) VALUES (%s, %s, %s)", (user_id, title, content))
+        mysql.connection.commit()
+        cur.close()
+        return jsonify({'message': 'Box added successfully'}), 201
+    else:
+        cur.close()
+        return jsonify({'message': 'User not found'}), 404
 
 
 
