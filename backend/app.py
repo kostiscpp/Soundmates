@@ -1,5 +1,6 @@
-from flask import Flask, request, jsonify
+from flask import Flask,request, jsonify
 from flask_mysqldb import MySQL
+from werkzeug.security import generate_password_hash, check_password_hash
 import yaml
 import random
 import geopy.distance
@@ -92,16 +93,18 @@ def login():
     if username == '' or password == '':
         return jsonify({'message': 'Please enter a username and password'}), 400
     cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM user WHERE username = %s", (username,))
-    rv = cur.fetchall()
-    if len(rv) == 0:
-        return jsonify({'message': 'User does not exist'}), 400
-    cur.execute("SELECT * FROM user WHERE username = %s AND password = %s", (username, password))
-    rv = cur.fetchall()
-    if len(rv) == 0:
-        return jsonify({'message': 'Wrong Password'}), 400
+    cur.execute("SELECT user_id, password FROM user WHERE username = %s", (username,))
+    user = cur.fetchone()
     cur.close()
-    return jsonify(rv)
+
+    if user and check_password_hash(user[1], password):
+        return jsonify({'message': 'Login successful'}), 200
+    else:
+        return jsonify({'message': 'Incorrect username or password'}), 400
+   
+    
+
+   
 
 @app.route('/signup', methods=['POST'])
 def signup():
@@ -119,6 +122,7 @@ def signup():
     mysql.connection.commit()
     cur.close()
     return jsonify(rv)
+
 @app.route('/profile', methods=['GET'])
 def profile():
     username = request.json['username']
@@ -131,7 +135,7 @@ def profile():
     
     return jsonify(rv)
 
-@app.route('/update_profile', methods=['PUT']) 
+@app.route('/get_profile', methods=['POST']) 
 def update_profile():
     cur = mysql.connection.cursor()
     username = request.json['username']
@@ -248,6 +252,33 @@ def liked_you():
     rv = cur.fetchall()
     cur.close()
     return jsonify([{"username":x[0],"photo_url":x[1]} for x in rv])
+def get_user_id():
+    #query the database to get the user_id
+    cursor = mysql.connection.cursor()
+    cursor.execute("SELECT user_id FROM user WHERE username = %s", (request.json['username'],))
+    user_id = cursor.fetchone()[0]
+    cursor.close()
+    return user_id
+
+
+#get profile data 
+@app.route('/api/profile_data', methods=['GET'])
+def get_profile_data():
+    # Assuming there's a way to identify the user (e.g., token, session, etc.)
+    user_id = get_user_id()  # implemented earlier on 
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT name, birthdate, job FROM user WHERE user_id = %s", (user_id,))
+    profile_data = cur.fetchone()
+    cur.close()
+
+    if profile_data:
+        name, birthdate, job = profile_data
+        age = age(birthdate)  # this implemented earlier on 
+        return jsonify({'nameAge': f'{name}, {age}', 'jobTitle': job})
+    else:
+        return jsonify({'message': 'Profile data not found'}), 404
+
+
 #endpoint to get the user's photos
 
 @app.route('/api/get_pictures', methods=['GET'])
@@ -312,29 +343,6 @@ def upload_picture():
         return jsonify({'message': 'Invalid file format'}), 400
 
 
-#delete picture 
-@app.route('/api/delete_picture', methods=['POST'])
-def delete_picture():
-    data = request.json
-    username = data.get('username')
-    picture_url = data.get('picture_url')
-
-    if not username or not picture_url:
-        return jsonify({'message': 'Username and picture URL are required'}), 400
-
-    cur = mysql.connection.cursor()
-    # Delete the picture from the database (and optionally from the file system)
-    # Database logic here
-    cur.execute("DELETE FROM photo WHERE photo_url = %s AND user_id = (SELECT user_id FROM user WHERE username = %s)", (picture_url, username))
-    mysql.connection.commit()
-    deleted_rows = cur.rowcount
-    cur.close()
-
-    if deleted_rows > 0:
-        # Optionally delete the file from the file system
-        return jsonify({'message': 'Picture deleted successfully'}), 200
-    else:
-        return jsonify({'message': 'Picture not found'}), 404
 
 #endpoint to get all the genres 
 
