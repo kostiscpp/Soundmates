@@ -211,15 +211,15 @@ class _MyHomePageState extends State<MyHomePage> {
           BottomNavigationBar(
             items: const <BottomNavigationBarItem>[
               BottomNavigationBarItem(
-                icon: Icon(Icons.notes),
+                icon: Icon(Icons.audiotrack_sharp),
                 label: 'Swipe',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.favorite),
+                icon: Icon(Icons.thumb_up_rounded),
                 label: 'Liked',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.chat),
+                icon: Icon(Icons.favorite),
                 label: 'Matches',
               ),
               BottomNavigationBarItem(
