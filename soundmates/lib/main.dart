@@ -2411,8 +2411,20 @@ class _GenreSelectState extends State<GenreSelect> {
     'Latin',
     'K-Pop',
   ];
-
+  Map<String, double> selectedGenres = {};
   List<String> filteredGenres = [];
+
+  void _addGenre(String genre, double percentage) {
+    setState(() {
+      selectedGenres[genre] = percentage;
+    });
+  }
+
+  void _removeGenre(String genre) {
+    setState(() {
+      selectedGenres.remove(genre);
+    });
+  }
 
   Future<List<String>> fetchGenres() async {
     try {
@@ -2486,7 +2498,10 @@ class _GenreSelectState extends State<GenreSelect> {
                           showDialog(
                             context: context,
                             builder: (BuildContext context) {
-                              return CustomGenreAlert(genre: suggestion);
+                              return CustomGenreAlert(
+                                genre: suggestion,
+                                onSelection: _addGenre,
+                              );
                             },
                           );
                         },
@@ -2514,7 +2529,10 @@ class _GenreSelectState extends State<GenreSelect> {
                       showDialog(
                         context: context,
                         builder: (BuildContext context) {
-                          return CustomGenreAlert(genre: suggestion);
+                          return CustomGenreAlert(
+                            genre: suggestion,
+                            onSelection: _addGenre,
+                          );
                         },
                       );
                     },
@@ -2525,11 +2543,14 @@ class _GenreSelectState extends State<GenreSelect> {
             SizedBox(height: 16),
             SingleChildScrollView(
                 child: Column(
-              children: [
-                GenreBox(genre: 'Rock', percentage: 69.0),
-                GenreBox(genre: 'Pop', percentage: 69.0),
-                GenreBox(genre: 'Hip Hop', percentage: 69.0),
-              ],
+              children: selectedGenres.entries.map((entry) {
+                return GenreBox(
+                  genre: entry.key,
+                  percentage: entry.value,
+                  onSelection: _addGenre,
+                  onDeletion: _removeGenre,
+                );
+              }).toList(),
             )),
           ],
         ),
@@ -2569,10 +2590,14 @@ class _GenreSelectState extends State<GenreSelect> {
 class GenreBox extends StatelessWidget {
   final String genre;
   final double percentage;
+  final Function(String genre, double percentage) onSelection;
+  final Function(String genre) onDeletion;
 
   const GenreBox({
     required this.genre,
     required this.percentage,
+    required this.onSelection,
+    required this.onDeletion,
   });
 
   @override
@@ -2585,7 +2610,10 @@ class GenreBox extends StatelessWidget {
           showDialog(
             context: context,
             builder: (BuildContext context) {
-              return CustomGenreAlert(genre: genre);
+              return CustomGenreAlert(
+                genre: genre,
+                onSelection: onSelection,
+              );
             },
           );
         },
@@ -2621,8 +2649,7 @@ class GenreBox extends StatelessWidget {
                 right: 5,
                 child: GestureDetector(
                   onTap: () {
-                    // Handle the tap on the close button
-                    print('Close button tapped');
+                    onDeletion(genre);
                   },
                   child: Icon(Icons.close, size: 20, color: Colors.white),
                 ),
@@ -3023,8 +3050,9 @@ class _CustomBoxDialogState extends State<CustomBoxDialog> {
 
 class CustomGenreAlert extends StatefulWidget {
   final String genre;
+  final Function(String genre, double percentage) onSelection;
 
-  const CustomGenreAlert({required this.genre});
+  const CustomGenreAlert({required this.genre, required this.onSelection});
 
   @override
   State<CustomGenreAlert> createState() => _CustomGenreAlertState();
@@ -3087,8 +3115,7 @@ class _CustomGenreAlertState extends State<CustomGenreAlert> {
             SizedBox(height: 16),
             TextButton(
               onPressed: () {
-                // Save the slider value here
-                print('Slider value: ${_sliderValue.round()}');
+                widget.onSelection(widget.genre, _sliderValue);
                 Navigator.of(context).pop();
               },
               child: Container(
