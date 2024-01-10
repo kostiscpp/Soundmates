@@ -190,6 +190,22 @@ CREATE TABLE IF NOT EXISTS `soundmates`.`interaction` (
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
+-- -----------------------------------------------------
+-- Table `soundmates`.`socials'
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `soundmates`.`socials` (
+  `user_id` INT NOT NULL,
+  `social_info` TEXT NOT NULL,
+  PRIMARY KEY (`user_id`),
+  INDEX `fk_socials_user_idx` (`user_id` ASC) VISIBLE,
+  CONSTRAINT `fk_socials_user`
+    FOREIGN KEY (`user_id`)
+    REFERENCES `soundmates`.`user` (`user_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
 
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;

@@ -522,6 +522,58 @@ def get_liked():
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
+#endpoint to get the user's boxes
+@app.route('/api/infoboxes', methods=['GET'])
+def get_infoboxes():
+    username = request.args.get('username')
+    if not username:
+        return jsonify({'message': 'Username is required'}), 400
+
+    cur = mysql.connection.cursor()
+    try:
+        # Fetching boxes information for the user
+        cur.execute("""
+            SELECT title, description 
+            FROM box 
+            WHERE user_id = (SELECT user_id FROM user WHERE username = %s)
+        """, (username,))
+        boxes = cur.fetchall()
+        
+        # Formatting the fetched data
+        box_data = [{'title': box[0], 'content': box[1]} for box in boxes]
+        return jsonify(box_data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cur.close()
+
+#endpoint to delete box
+@app.route('/api/delete_box', methods=['POST'])
+def delete_box():
+    data = request.json
+    username = data.get('username')
+    title = data.get('title')
+    content = data.get('content')
+
+    if not all([username, title, content]):
+        return jsonify({'message': 'Username, title, and content are required'}), 400
+
+    cur = mysql.connection.cursor()
+    try:
+        # Assuming 'box' table has columns 'title', 'description', and is related to 'user'
+        cur.execute("""
+            DELETE FROM box 
+            WHERE user_id = (SELECT user_id FROM user WHERE username = %s)
+            AND title = %s
+            AND description = %s
+        """, (username, title, content))
+        mysql.connection.commit()
+        return jsonify({'message': 'Box deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cur.close()
+
 
 
 if __name__ == '__main__':
