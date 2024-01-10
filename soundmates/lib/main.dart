@@ -599,13 +599,32 @@ class _ProfilePageState extends State<ProfilePage> {
           }).toList();
         });
       } else {
-        if (!mounted) return;
-        print('Error fetching data');
+        showAlert();
       }
     } catch (e) {
       if (!mounted) return;
-      print('Error fetching data');
+      showAlert();
     }
+  }
+
+  void showAlert() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Boxes Error'),
+          content: Text('we could not load your box data, please try again'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> refreshBoxes() async {
@@ -1306,10 +1325,33 @@ class _ProfileTopBoxState extends State<ProfileTopBox> {
           textController1.text = data['nameAge'];
           textController2.text = data['jobTitle'];
         });
+      } else {
+        showAlert();
       }
     } catch (e) {
-      print(e);
+      showAlert();
     }
+  }
+
+  void showAlert() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Profile Error'),
+          content:
+              Text('We could not load your profile data, please try again'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void sendDataToServer(String text, String fieldType) async {
@@ -1411,10 +1453,32 @@ class _ProfilePicturesBoxState extends State<ProfilePicturesBox> {
         setState(() {
           pictures = List<String>.from(json.decode(response.body));
         });
+      } else {
+        showAlert();
       }
     } catch (e) {
-      print('Error fetching pictures');
+      showAlert();
     }
+  }
+
+  void showAlert() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Pictures Error'),
+          content: Text('we could not load your pictures, please try again'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
