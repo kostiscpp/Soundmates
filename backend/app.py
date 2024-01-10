@@ -85,7 +85,7 @@ def profile_swipe(profile):
     result["boxes"] = [x[1] for x in box]
     return result
   
-@app.route('/login', methods=['POST'])
+@app.route('/login', methods=['GET'])
 def login():
 #     # Check if user exists in database
     username = request.json['username']
@@ -445,6 +445,83 @@ def add_box():
         cur.close()
         return jsonify({'message': 'User not found'}), 404
 
+#update location endpoint 
+@app.route('/api/update_location', methods=['POST'])
+def update_location():
+    data = request.json
+    username = data.get('username')
+    latitude = data.get('latitude')
+    longitude = data.get('longitude')
+
+    if not all([username, latitude, longitude]):
+        return jsonify({'message': 'Username, latitude, and longitude are required'}), 400
+
+    cur = mysql.connection.cursor()
+    try:
+        cur.execute("UPDATE user SET location_lat = %s, location_long = %s WHERE username = %s", (latitude, longitude, username))
+        mysql.connection.commit()
+        return jsonify({'message': 'Location updated successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cur.close()
+
+#interaction endpoint 
+@app.route('/api/interaction', methods=['POST'])
+def user_interaction():
+    data = request.json
+    username = data.get('username')
+    target_username = data.get('targetusername')
+    interaction_type = data.get('interaction')
+
+    if not all([username, target_username, interaction_type]):
+        return jsonify({'message': 'All fields are required'}), 400
+
+    cur = mysql.connection.cursor()
+    try:
+        # Assuming there's a table to store interactions (like 'interaction')
+        # and it has columns for storing the user_id of the acting user,
+        # the user_id of the target user, and the type of interaction
+        cur.execute("""
+            INSERT INTO interaction (subject_id, object_id, type)
+            VALUES (
+                (SELECT user_id FROM user WHERE username = %s),
+                (SELECT user_id FROM user WHERE username = %s),
+                %s
+            )
+        """, (username, target_username, interaction_type))
+        mysql.connection.commit()
+        return jsonify({'message': 'Interaction recorded successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cur.close()
+
+#liked endpoint 
+@app.route('/api/liked', methods=['GET'])
+def get_liked():
+    username = request.args.get('username')
+    if not username:
+        return jsonify({'message': 'Username is required'}), 400
+
+    cur = mysql.connection.cursor()
+    try:
+        # Assuming 'interaction' table has a type column where 'like' indicates a like interaction
+        cur.execute("""
+            SELECT i.*, u.username as target_username
+            FROM interaction i
+            JOIN user u ON i.object_id = u.user_id
+            WHERE i.subject_id = (SELECT user_id FROM user WHERE username = %s)
+            AND i.type = 'like'
+        """, (username,))
+        likes = cur.fetchall()
+        # Format the data as needed. This is a basic example.
+        liked_data = [{'target_username': like['target_username']} for like in likes]
+        return jsonify({'answers': liked_data})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cur.close()
 
 
 if __name__ == '__main__':
