@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 import 'package:geolocator/geolocator.dart';
+import 'package:oauth2_client/spotify_oauth2_client.dart';
 
 class SecureStorage {
   final _storage = FlutterSecureStorage();
@@ -2372,6 +2373,67 @@ class _LoginPageState extends State<LoginPage> {
 }
 
 class SpotifyorCustom extends StatelessWidget {
+  final client = SpotifyOAuth2Client(
+    customUriScheme: 'com.soundmates',
+    redirectUri: 'com.soundmates://callback',
+  );
+
+  Future<List<String>> authenticate() async {
+    try {
+
+      var authResp = await client.requestAuthorization(
+        clientId: '79162274865743698734ad317e97304e',
+        customParams: {'show_dialog': 'true'},
+        scopes : ['user-read-private', 'user-read-playback-state','user-top-read']
+      );
+
+      var authCode = authResp.code;
+      var accessTokenResponse = await client.requestAccessToken(
+        code: authCode.toString(),
+        clientId: '79162274865743698734ad317e97304e',
+        clientSecret: '04735cc3cfac41d9a4d54b29a0e06a66',
+      );
+
+      return [accessTokenResponse.accessToken.toString(), accessTokenResponse.refreshToken.toString()];
+    } catch (e) {
+      print('Error during authentication: $e');
+      return [];
+    }
+  }
+
+  Future<List<String>> topgenres(accessToken) async {
+    if (accessToken == []) {
+      print('Access Token not available');
+      return [];
+    }
+
+    try {
+      var response = await http.get(
+        Uri.parse('https://api.spotify.com/v1/me/top/artists'),
+        headers: {
+        "Authorization": 'Bearer ${accessToken[0]}'
+        },
+      );
+       if(response.statusCode == 200){
+        
+          print(json.decode(response.body)); 
+          var genres = parseGenres(json.decode(response.body));
+          return genres;
+          
+      }
+    else
+      {
+        print('Error fetching genres: ${response.statusCode}');
+        return [];
+      }
+      // Parse the response and update the UI
+      // Assuming you have a method to parse the JSON response to a list of playlist names
+      
+    } catch (e) {
+      print('Error fetching genres: $e');
+      return [];
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -2384,7 +2446,11 @@ class SpotifyorCustom extends StatelessWidget {
           children: [
             GestureDetector(
               onTap: () {
-                //to do
+                var credentials = authenticate();
+                var genres = topgenres(credentials);
+                sendDataToServer(genres);
+                // do the http request to put the genres in the database
+
               },
               child: Container(
                 height: 50,
@@ -2434,6 +2500,44 @@ class SpotifyorCustom extends StatelessWidget {
         ),
       ),
     );
+  }
+  List<String> parseGenres(Map<String, dynamic> jsonData) {
+  final List<dynamic> topArtists = jsonData['items'];
+
+  Set<String> genres = {};
+  for (var artist in topArtists) {
+    List<dynamic> artistGenres = artist['genres'];
+    genres.addAll(artistGenres.cast<String>());
+  }
+
+  return genres.toSet().toList();
+  }
+  Future<String?> sendDataToServer(genres) async {
+    if (1 + 1 == 2) return null;
+    try {
+      var credentials = await SecureStorage().getCredentials();
+      var username = credentials['username'];
+      var response = await http.post(
+        Uri.parse('https://yourserver.com/login'),
+        body: {
+          'username': username, // idk if this is right
+          'genres' : genres,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        //SecureStorage()
+          //  .storeCredentials(usernameController.text, passwordController.text);
+        return null;
+      } else {
+        // Error occurred
+        return response.body;
+      }
+    } catch (e) {
+      // Exception handling
+      print('Error sending data: $e');
+      return 'Error sending data';
+    }
   }
 }
 

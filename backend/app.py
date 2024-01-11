@@ -362,6 +362,64 @@ def get_genres():
     finally:
         cur.close()
 
+#endpoint to update user's genres
+@app.route('/api/update_genres', methods=['POST'])
+def update_genres():
+    data = request.json
+    username = data.get('username')
+    genres = data.get('genres')
+
+    if not username or not genres:
+        return jsonify({'message': 'Username and genres are required'}), 400
+
+    cur = mysql.connection.cursor()
+    try:
+        # Delete all existing genres for the user
+        cur.execute("DELETE FROM preference WHERE user_userid = (SELECT user_id FROM user WHERE username = %s)", (username,))
+        mysql.connection.commit()
+        defined_genres = ['Rock',
+                          'Pop',
+                          'Hip Hop',
+                          'Rap',
+                          'Country',
+                          'Jazz',
+                          'Classical',
+                          'Electronic',
+                          'Metal',
+                          'R&B',
+                          'Reggae',
+                          'Folk',
+                          'Blues',
+                          'Punk',
+                          'Indie',
+                          'Soul',
+                          'Funk',
+                          'Disco',
+                          'Techno',
+                          'House',
+                          'EDM',
+                          'Dubstep',
+                          'Trap',
+                          'Drum & Bass',
+                          'Ambient',
+                          'Reggaeton',
+                          'Ska',
+                          'Gospel',
+                          'Latin',
+                          'K-Pop']
+        # Insert the new genres
+        for genre in genres:
+            Genre = genre.capitalize()
+            if Genre in defined_genres:
+                cur.execute("INSERT INTO preference (user_id, genre_genre_id, percentage) VALUES ((SELECT user_id FROM user WHERE username = %s), (SELECT genre_id FROM genre WHERE genre = %s), 69)", (username, genre))
+            mysql.connection.commit()
+
+        return jsonify({'message': 'Genres updated successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cur.close()
+
 #endpoint to get the socials 
 
 @app.route('/api/mysocials', methods=['GET'])
