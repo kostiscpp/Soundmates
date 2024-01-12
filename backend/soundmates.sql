@@ -174,7 +174,7 @@ CREATE TABLE IF NOT EXISTS `soundmates`.`interaction` (
   `subject_id` INT NOT NULL,
   `object_id` INT NOT NULL,
   `date` TIMESTAMP NOT NULL,
-  `type` ENUM('like', 'reject', 'superlike', 'reload') NOT NULL,
+  `type` ENUM('like', 'reject', 'superlike', 'reload', 'de-facto-reject') NOT NULL,
   PRIMARY KEY (`subject_id`, `object_id`),
   INDEX `fk_user_has_user_user6_idx` (`object_id` ASC) VISIBLE,
   INDEX `fk_user_has_user_user5_idx` (`subject_id` ASC) VISIBLE,
