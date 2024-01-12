@@ -17,10 +17,10 @@ app.config['MYSQL_DB'] = db['mysql_db']
 mysql = MySQL(app)
 
 # Helper function to get age from birthdate
-def age(birthdate):
-    today = date.today()
-    age = today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
-    return age
+# def age(birthdate):
+#     today = date.today()
+#     age = today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
+#     return age
 
 
 
@@ -40,6 +40,7 @@ def swipe():
     username = request.json['username']
     cur = mysql.connection.cursor()
     query = "SELECT user_id,gender,prefered_gender FROM user WHERE username = %s"
+    print("got here")
     cur.execute(query, (username,))
     rv = cur.fetchall()
     userID = rv[0][0]
@@ -107,7 +108,7 @@ def profile_swipe(profile):
     cur.close()
     result = {}
     result["username"] = profile[1]
-    result["age"] = age(profile[2])
+    result["age"] = profile[2]
     result["name"] = profile[3]
     result["distance"] = str(round(profile[-1],1)) + "km"
     result["job"] = profile[4]
@@ -146,9 +147,16 @@ def signup():
     rv = cur.fetchall()
     if len(rv) != 0:
         return jsonify({'message': 'Username already exists'}), 400
-    attr = tuple(x for x in request.json.values())
+    v = list(x for x in request.json.values())
+    attr = v[:2] 
+    attr += [v[0]]
+    attr += v[2:]
+    attr[-1] = attr[-1].lower()
+    attr[-2] = attr[-2].lower()
+    attr = tuple(attr)
+    print(attr)
     cur.execute("""INSERT INTO user (username, password, name, email,
-  birthdate, gender, preferred_gender, location_long, location_lat) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""", attr)
+  age, gender, preferred_gender, location_long, location_lat) VALUES (%s, %s, %s, %s, %s, %s, %s, 42, 42)""", attr)
     mysql.connection.commit()
     cur.close()
     return jsonify(rv)
@@ -178,8 +186,8 @@ def update_profile():
             cur.execute("UPDATE user SET name = %s WHERE username = %s", (request.json['name'], username))
         if 'email' in request.json:
             cur.execute("UPDATE user SET email = %s WHERE username = %s", (request.json['email'], username))
-        if 'birthdate' in request.json:
-            cur.execute("UPDATE user SET birthdate = %s WHERE username = %s", (request.json['birthdate'], username))
+        if 'age' in request.json:
+            cur.execute("UPDATE user SET age = %s WHERE username = %s", (request.json['age'], username))
         if 'prefered_gender' in request.json:
             cur.execute("UPDARE user SET prefered_gender = %s WHERE username = %s", (request.json['prefered_gender'], username))
         if 'job' in request.json:
@@ -297,13 +305,13 @@ def get_profile_data():
     # Assuming there's a way to identify the user (e.g., token, session, etc.)
     user_id = get_user_id()  # implemented earlier on 
     cur = mysql.connection.cursor()
-    cur.execute("SELECT name, birthdate, job FROM user WHERE user_id = %s", (user_id,))
+    cur.execute("SELECT name, age, job FROM user WHERE user_id = %s", (user_id,))
     profile_data = cur.fetchone()
     cur.close()
 
     if profile_data:
-        name, birthdate, job = profile_data
-        age = age(birthdate)  # this implemented earlier on 
+        name, age, job = profile_data
+        age = age(age)  # this implemented earlier on 
         return jsonify({'nameAge': f'{name}, {age}', 'jobTitle': job})
     else:
         return jsonify({'message': 'Profile data not found'}), 404
@@ -385,6 +393,7 @@ def get_genres():
         genres_data = cur.fetchall()
         # Extracting genres from the query result
         genres = [genre[0] for genre in genres_data]
+        print(genres)
         return jsonify({'genres': genres})
     except Exception as e:
         # Handle any exceptions that occur
@@ -396,9 +405,10 @@ def get_genres():
 @app.route('/api/update_genres', methods=['POST'])
 def update_genres():
     data = request.json
+    print(data)
     username = data.get('username')
     genres = data.get('genres')
-
+    print(genres)
     if not username or not genres:
         return jsonify({'message': 'Username and genres are required'}), 400
 
@@ -408,8 +418,13 @@ def update_genres():
         cur.execute("DELETE FROM preference WHERE user_userid = (SELECT user_id FROM user WHERE username = %s)", (username,))
         mysql.connection.commit()
         # Insert the new genres
-        for genre in genres:
-            cur.execute("INSERT INTO preference (user_id, genre_genre_id, percentage) VALUES ((SELECT user_id FROM user WHERE username = %s), (SELECT genre_id FROM genre WHERE genre = %s), 69)", (username, genre))
+        cur.execute("SELECT genre FROM genre")
+        genres_data = cur.fetchall()
+        for percentage,genre in genres:
+            if genre not in genres_data:
+                cur.execute("INSERT INTO genre (genre) VALUES (%s)", (genre,))
+                mysql.connection.commit()
+            cur.execute("INSERT INTO preference (user_id, genre_genre_id, percentage) VALUES ((SELECT user_id FROM user WHERE username = %s), (SELECT genre_id FROM genre WHERE genre = %s), %s)", (username, genre, percentage))
             mysql.connection.commit()
 
         return jsonify({'message': 'Genres updated successfully'}), 200
@@ -633,4 +648,4 @@ def delete_box():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')

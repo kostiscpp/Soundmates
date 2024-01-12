@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS `soundmates`.`user` (
   `email` VARCHAR(255) NOT NULL,
   `name` VARCHAR(255) NOT NULL,
   `job` VARCHAR(255) NULL,
-  `birthdate` DATETIME NOT NULL,
+  `age` INT NOT NULL,
   `gender` ENUM('male', 'female', 'non binary') NOT NULL,
   `preferred_gender` ENUM('male', 'female', 'any') NOT NULL,
   `location_long` FLOAT NOT NULL,
@@ -64,9 +64,8 @@ ENGINE = InnoDB;
 DROP TABLE IF EXISTS `soundmates`.`genre` ;
 
 CREATE TABLE IF NOT EXISTS `soundmates`.`genre` (
-  `genre_id` INT NOT NULL,
+  `genre_id` INT NOT NULL AUTO_INCREMENT,
   `genre` VARCHAR(255) NOT NULL,
-  `genrecol` VARCHAR(45) NULL,
   PRIMARY KEY (`genre_id`),
   UNIQUE INDEX `genre_id_UNIQUE` (`genre_id` ASC) VISIBLE)
 ENGINE = InnoDB;
