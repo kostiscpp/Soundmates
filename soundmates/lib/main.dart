@@ -600,15 +600,15 @@ class _ProfilePageState extends State<ProfilePage> {
           }).toList();
         });
       } else {
-        showAlert();
+        showAlert('we could not load your box data, please try again');
       }
     } catch (e) {
       if (!mounted) return;
-      showAlert();
+      showAlert('we could not load your box data, please try again');
     }
   }
 
-  void showAlert() {
+  void showAlert(String message) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -701,10 +701,10 @@ class _ProfilePageState extends State<ProfilePage> {
                           if (response.statusCode == 200) {
                             await refreshBoxes();
                           } else {
-                            print('Error deleting box');
+                            showAlert('Error deleting box');
                           }
                         } catch (e) {
-                          print('Error deleting box');
+                          showAlert('Error deleting box');
                         }
                       },
                     ))
@@ -1327,21 +1327,20 @@ class _ProfileTopBoxState extends State<ProfileTopBox> {
           textController2.text = data['jobTitle'];
         });
       } else {
-        showAlert();
+        showAlert('We could not load your profile data, please try again');
       }
     } catch (e) {
-      showAlert();
+      showAlert('We could not load your profile data, please try again');
     }
   }
 
-  void showAlert() {
+  void showAlert(String message) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Profile Error'),
-          content:
-              Text('We could not load your profile data, please try again'),
+          content: Text(message),
           actions: <Widget>[
             TextButton(
               child: Text('OK'),
@@ -1364,9 +1363,11 @@ class _ProfileTopBoxState extends State<ProfileTopBox> {
 
       if (response.statusCode == 200) {
         setState(() {});
+      } else {
+        showAlert('We could not save your profile data, please try again');
       }
     } catch (e) {
-      print(e);
+      showAlert('We could not save your profile data, please try again');
     }
   }
 
@@ -1455,20 +1456,20 @@ class _ProfilePicturesBoxState extends State<ProfilePicturesBox> {
           pictures = List<String>.from(json.decode(response.body));
         });
       } else {
-        showAlert();
+        showAlert('we could not load your pictures, please try again');
       }
     } catch (e) {
-      showAlert();
+      showAlert('we could not load your pictures, please try again');
     }
   }
 
-  void showAlert() {
+  void showAlert(String message) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Pictures Error'),
-          content: Text('we could not load your pictures, please try again'),
+          content: Text(message),
           actions: <Widget>[
             TextButton(
               child: Text('OK'),
@@ -1524,7 +1525,7 @@ class _ProfilePicturesBoxState extends State<ProfilePicturesBox> {
   }
 }
 
-class ProfilePic extends StatelessWidget {
+class ProfilePic extends StatefulWidget {
   final List<String> pictures;
   final int currentindex;
   final Function onImageUpload;
@@ -1534,6 +1535,11 @@ class ProfilePic extends StatelessWidget {
       required this.currentindex,
       required this.onImageUpload});
 
+  @override
+  State<ProfilePic> createState() => _ProfilePicState();
+}
+
+class _ProfilePicState extends State<ProfilePic> {
   Future<void> uploadImage(String imagePath, String username) async {
     try {
       var request = http.MultipartRequest(
@@ -1552,13 +1558,12 @@ class ProfilePic extends StatelessWidget {
       var response = await request.send();
 
       if (response.statusCode == 200) {
-        print('Image uploaded successfully');
-        onImageUpload();
+        widget.onImageUpload();
       } else {
-        print('Failed to upload image');
+        showAlert('Failed to upload image');
       }
     } catch (e) {
-      print('Failed to upload image');
+      showAlert('Failed to upload image');
     }
   }
 
@@ -1576,19 +1581,38 @@ class ProfilePic extends StatelessWidget {
       );
 
       if (response.statusCode == 200) {
-        print('Image deleted successfully');
+        widget.onImageUpload();
       } else {
-        print('Failed to delete image');
+        showAlert('Failed to delete image');
       }
     } catch (e) {
-      print('Failed to delete image');
+      showAlert('Failed to delete image');
     }
+  }
+
+  void showAlert(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Pictures Error'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (pictures.length - currentindex - 1 < -1) {
-      print('hello $currentindex');
+    if (widget.pictures.length - widget.currentindex - 1 < -1) {
       return Expanded(
         child: Padding(
           padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
@@ -1602,10 +1626,10 @@ class ProfilePic extends StatelessWidget {
           ),
         ),
       );
-    } else if (pictures.length - currentindex - 1 == -1) {
+    } else if (widget.pictures.length - widget.currentindex - 1 == -1) {
       return _buildAddButton(context);
     } else {
-      return _buildPicture(context, pictures[currentindex]);
+      return _buildPicture(context, widget.pictures[widget.currentindex]);
     }
   }
 
@@ -1664,7 +1688,7 @@ class ProfilePic extends StatelessWidget {
                 var credentials = await SecureStorage().getCredentials();
                 var username = credentials['username'];
                 await deleteImage(username!, pictureUrl);
-                onImageUpload();
+                widget.onImageUpload();
               },
               child: Container(
                 color: Colors.black54,
@@ -2084,7 +2108,6 @@ class _SignUpPageState extends State<SignUpPage> {
       }
     } catch (e) {
       // Exception handling
-      print('Error sending data: $e');
       return 'Error sending data';
     }
   }
@@ -2232,7 +2255,6 @@ class _SignUpPageState extends State<SignUpPage> {
         ),
       );
     } catch (e) {
-      print('Error in GenreSelect build: $e');
       return Scaffold(
         body: Center(child: Text('Error occurred')),
       );
@@ -2266,12 +2288,10 @@ class _LoginPageState extends State<LoginPage> {
             .storeCredentials(usernameController.text, passwordController.text);
         return null;
       } else {
-        // Error occurred
-        return response.body;
+        return "Error sending data";
       }
     } catch (e) {
       // Exception handling
-      print('Error sending data: $e');
       return 'Error sending data';
     }
   }
@@ -2380,12 +2400,16 @@ class SpotifyorCustom extends StatelessWidget {
 
   Future<List<String>> authenticate() async {
     try {
-
       var authResp = await client.requestAuthorization(
-        clientId: '79162274865743698734ad317e97304e',
-        customParams: {'show_dialog': 'true'},
-        scopes : ['user-read-private', 'user-read-playback-state','user-top-read']
-      );
+          clientId: '79162274865743698734ad317e97304e',
+          customParams: {
+            'show_dialog': 'true'
+          },
+          scopes: [
+            'user-read-private',
+            'user-read-playback-state',
+            'user-top-read'
+          ]);
 
       var authCode = authResp.code;
       var accessTokenResponse = await client.requestAccessToken(
@@ -2394,7 +2418,10 @@ class SpotifyorCustom extends StatelessWidget {
         clientSecret: '04735cc3cfac41d9a4d54b29a0e06a66',
       );
 
-      return [accessTokenResponse.accessToken.toString(), accessTokenResponse.refreshToken.toString()];
+      return [
+        accessTokenResponse.accessToken.toString(),
+        accessTokenResponse.refreshToken.toString()
+      ];
     } catch (e) {
       print('Error during authentication: $e');
       return [];
@@ -2410,30 +2437,24 @@ class SpotifyorCustom extends StatelessWidget {
     try {
       var response = await http.get(
         Uri.parse('https://api.spotify.com/v1/me/top/artists'),
-        headers: {
-        "Authorization": 'Bearer ${accessToken[0]}'
-        },
+        headers: {"Authorization": 'Bearer ${accessToken[0]}'},
       );
-       if(response.statusCode == 200){
-        
-          print(json.decode(response.body)); 
-          var genres = parseGenres(json.decode(response.body));
-          return genres;
-          
-      }
-    else
-      {
+      if (response.statusCode == 200) {
+        print(json.decode(response.body));
+        var genres = parseGenres(json.decode(response.body));
+        return genres;
+      } else {
         print('Error fetching genres: ${response.statusCode}');
         return [];
       }
       // Parse the response and update the UI
       // Assuming you have a method to parse the JSON response to a list of playlist names
-      
     } catch (e) {
       print('Error fetching genres: $e');
       return [];
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -2450,7 +2471,6 @@ class SpotifyorCustom extends StatelessWidget {
                 var genres = topgenres(credentials);
                 sendDataToServer(genres);
                 // do the http request to put the genres in the database
-
               },
               child: Container(
                 height: 50,
@@ -2501,17 +2521,19 @@ class SpotifyorCustom extends StatelessWidget {
       ),
     );
   }
+
   List<String> parseGenres(Map<String, dynamic> jsonData) {
-  final List<dynamic> topArtists = jsonData['items'];
+    final List<dynamic> topArtists = jsonData['items'];
 
-  Set<String> genres = {};
-  for (var artist in topArtists) {
-    List<dynamic> artistGenres = artist['genres'];
-    genres.addAll(artistGenres.cast<String>());
+    Set<String> genres = {};
+    for (var artist in topArtists) {
+      List<dynamic> artistGenres = artist['genres'];
+      genres.addAll(artistGenres.cast<String>());
+    }
+
+    return genres.toSet().toList();
   }
 
-  return genres.toSet().toList();
-  }
   Future<String?> sendDataToServer(genres) async {
     if (1 + 1 == 2) return null;
     try {
@@ -2521,21 +2543,20 @@ class SpotifyorCustom extends StatelessWidget {
         Uri.parse('https://yourserver.com/login'),
         body: {
           'username': username, // idk if this is right
-          'genres' : genres,
+          'genres': genres,
         },
       );
 
       if (response.statusCode == 200) {
         //SecureStorage()
-          //  .storeCredentials(usernameController.text, passwordController.text);
+        //  .storeCredentials(usernameController.text, passwordController.text);
         return null;
       } else {
         // Error occurred
-        return response.body;
+        return 'Error sending data';
       }
     } catch (e) {
       // Exception handling
-      print('Error sending data: $e');
       return 'Error sending data';
     }
   }
@@ -2605,7 +2626,6 @@ class _GenreSelectState extends State<GenreSelect> {
         throw Exception('Failed to load genres');
       }
     } catch (e) {
-      print(e);
       return [];
     }
   }
@@ -2622,7 +2642,6 @@ class _GenreSelectState extends State<GenreSelect> {
 
   @override
   Widget build(BuildContext context) {
-    print('inside or sth?');
     return Scaffold(
       appBar: AppBar(
         title: Text("Genre Selector"),
@@ -2662,7 +2681,6 @@ class _GenreSelectState extends State<GenreSelect> {
                       return GestureDetector(
                         onTap: () {
                           // Handle suggestion selection here
-                          print(suggestion);
                           showDialog(
                             context: context,
                             builder: (BuildContext context) {
@@ -2693,7 +2711,6 @@ class _GenreSelectState extends State<GenreSelect> {
                     ),
                     onSuggestionSelected: (suggestion) {
                       // Handle suggestion selection here
-                      print(suggestion);
                       showDialog(
                         context: context,
                         builder: (BuildContext context) {
@@ -2946,7 +2963,6 @@ class _CustomSocialDialogState extends State<CustomSocialDialog> {
         });
       }
     } catch (e) {
-      print(e);
       setState(() {
         isLoading = false;
       });
@@ -2966,11 +2982,33 @@ class _CustomSocialDialogState extends State<CustomSocialDialog> {
             json.encode({'socials': textController.text, 'username': username}),
       );
       if (response.statusCode == 200) {
-        print(response);
+        return;
+      } else {
+        showAlert('There was an error saving your socials. Please try again.');
       }
     } catch (e) {
-      print(e);
+      showAlert('There was an error saving your socials. Please try again.');
     }
+  }
+
+  void showAlert(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Error'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -3090,15 +3128,34 @@ class _CustomBoxDialogState extends State<CustomBoxDialog> {
         }),
       );
       if (response.statusCode == 200) {
-        print(response);
         if (!mounted) return;
         Navigator.of(context).pop();
       } else {
-        print(response);
+        showAlert('There was an error saving that box. Please try again.');
       }
     } catch (e) {
-      print(e);
+      showAlert('There was an error saving that box. Please try again.');
     }
+  }
+
+  void showAlert(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Error'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
