@@ -35,8 +35,18 @@ def index():
 def swipe():
     # Get 6 users from database that are in acceptable range of user's location if cached users are not available
     # If cached users are available, return cached users
+    lat = request.json['latitude']
+    long = request.json['longitude']
+    username = request.json['username']
+    cur = mysql.connection.cursor()
+    query = "SELECT user_id,gender,prefered_gender FROM user WHERE username = %s"
+    cur.execute(query, (username,))
+    rv = cur.fetchall()
+    userID = rv[0][0]
+    gender = rv[0][1]
+    prefered_gender = rv[0][2]
     query =""" 
-    SELECT username, age, name, job,
+    SELECT u.username, u.age, u.name, u.job,
         (6371 * acos(
             cos(radians(%s)) 
             * cos(radians(location_lat)) 
@@ -44,23 +54,43 @@ def swipe():
             + sin(radians(%s)) 
             * sin(radians(location_lat))
         )) AS distance  
-    FROM user 
-    WHERE username != %s 
-    AND user_id NOT IN (
+    FROM user u 
+    WHERE u.username != %s 
+    AND u.user_id NOT IN (
         SELECT user2_id 
         FROM soundmates.Match 
-        WHERE user1_id = user_id
+        WHERE user1_id = %s AND user2_id = u.user_id
         UNION 
         SELECT user1_id 
         FROM soundmates.Match 
-        WHERE user2_id = user_id
+        WHERE user2_id = %s AND user1_id = u.user_id
     )
-    ORDER BY distance 
-    LIMIT 6
+    AND u.user_id NOT IN (
+        SELECT liked_id 
+        FROM soundmates.super_likes 
+        WHERE liker_id = %s
+    ) 
 """
+    filter_rejected = """AND u.user_id NOT IN ( 
+        SELECT user_id FROM soundmates.interaction 
+        WHERE (subject_id = %s OR object_id = %s) AND (type = 'reject' OR type = 'de-facto-reject')
+        )"""
+    query += filter_rejected
+    filter_gender = """AND u.user_id IN (SELECT user_id FROM user 
+                        WHERE (prefered_gender = u.gender OR prefered_gender = 'any') 
+                        AND (gender = u.prefered_gender OR u.prefered = 'any'))"""
+    query += filter_gender
+    filter_music = """AND u.user_id IN (SELECT user_id FROM preference
+                        WHERE genre_genre_id IN (SELECT genre_genre_id FROM preference WHERE user_id = %s AND percentage >= 50) AND percentage >= 50) """
+    query += filter_music
+    priority_to_interactions = """ ORDER BY CASE WHEN u.user_id IN (SELECT user_id FROM soundmates.interaction WHERE subject_id = %s AND type = 'like') THEN 1 ELSE 2 END"""
+    limit_by = """ LIMIT 20"""
     cur = mysql.connection.cursor()
-    cur.execute(query, (request.json['latitude'], request.json['longitude'], request.json['latitude'], request.json['username']))
+    cur.execute(query + priority_to_interactions + limit_by, (lat, long, lat, username, userID, userID, userID, userID, userID, userID, userID))
     rv = cur.fetchall()
+    if len(rv) == 0:
+        cur.execute(query + limit_by, (lat, long, lat, username, userID, userID, userID, userID, userID, userID))
+        rv = cur.fetchall()
     rv = [profile_swipe(x) for x in rv] 
     return rv
 # Helper function
@@ -377,41 +407,9 @@ def update_genres():
         # Delete all existing genres for the user
         cur.execute("DELETE FROM preference WHERE user_userid = (SELECT user_id FROM user WHERE username = %s)", (username,))
         mysql.connection.commit()
-        defined_genres = ['Rock',
-                          'Pop',
-                          'Hip Hop',
-                          'Rap',
-                          'Country',
-                          'Jazz',
-                          'Classical',
-                          'Electronic',
-                          'Metal',
-                          'R&B',
-                          'Reggae',
-                          'Folk',
-                          'Blues',
-                          'Punk',
-                          'Indie',
-                          'Soul',
-                          'Funk',
-                          'Disco',
-                          'Techno',
-                          'House',
-                          'EDM',
-                          'Dubstep',
-                          'Trap',
-                          'Drum & Bass',
-                          'Ambient',
-                          'Reggaeton',
-                          'Ska',
-                          'Gospel',
-                          'Latin',
-                          'K-Pop']
         # Insert the new genres
         for genre in genres:
-            Genre = genre.capitalize()
-            if Genre in defined_genres:
-                cur.execute("INSERT INTO preference (user_id, genre_genre_id, percentage) VALUES ((SELECT user_id FROM user WHERE username = %s), (SELECT genre_id FROM genre WHERE genre = %s), 69)", (username, genre))
+            cur.execute("INSERT INTO preference (user_id, genre_genre_id, percentage) VALUES ((SELECT user_id FROM user WHERE username = %s), (SELECT genre_id FROM genre WHERE genre = %s), 69)", (username, genre))
             mysql.connection.commit()
 
         return jsonify({'message': 'Genres updated successfully'}), 200
