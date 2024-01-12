@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 import 'package:geolocator/geolocator.dart';
 import 'package:oauth2_client/spotify_oauth2_client.dart';
+import 'config.dart';
 
 class SecureStorage {
   final _storage = FlutterSecureStorage();
@@ -160,15 +161,15 @@ class _MyHomePageState extends State<MyHomePage> {
     var username = credentials['username'];
 
     await http.post(
-      Uri.parse('https://yourserver.com/api/update_location'),
+      Uri.parse('${AppConfig.serverUrl}/update_location'),
       headers: {
         'Content-Type': 'application/json; charset=UTF-8',
       },
-      body: {
+      body: jsonEncode({
         'username': username,
         'latitude': position.latitude.toString(),
         'longitude': position.longitude.toString(),
-      },
+      }),
     );
     // Handle the response from the server
   }
@@ -300,7 +301,7 @@ class _SwipePageState extends State<SwipePage> {
     profiles = [dummyprofile, dummy2, dummyprofile];
     if (1 + 1 == 2) return;
     final response =
-        await http.get(Uri.parse('https://yourserver.com/get_profiles_swipe'));
+        await http.get(Uri.parse('${AppConfig.serverUrl}/get_profiles_swipe'));
     List<dynamic> profileJson = json.decode(response.body)['results'];
     setState(() {
       profiles = profileJson.map((json) => Profile.fromJson(json)).toList();
@@ -348,7 +349,7 @@ class _SwipePageState extends State<SwipePage> {
       String targetusername = profile.username;
 
       var response = await http.post(
-        Uri.parse('https://yourserver.com/api/interaction'),
+        Uri.parse('${AppConfig.serverUrl}/api/interaction'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -402,7 +403,7 @@ class _LikedPageState extends State<LikedPage> {
       var credentials = await SecureStorage().getCredentials();
       String myUsername = credentials['username'] ?? '';
       final response = await http.get(
-        Uri.parse('https://yourserver.com/api/liked').replace(queryParameters: {
+        Uri.parse('${AppConfig.serverUrl}/api/liked').replace(queryParameters: {
           'username': myUsername,
         }),
       );
@@ -487,7 +488,7 @@ class _MatchesPageState extends State<MatchesPage> {
       var credentials = await SecureStorage().getCredentials();
       String myUsername = credentials['username'] ?? '';
       final response = await http.get(
-        Uri.parse('https://yourserver.com/api/matches')
+        Uri.parse('${AppConfig.serverUrl}/api/matches')
             .replace(queryParameters: {
           'username': myUsername,
         }),
@@ -587,7 +588,7 @@ class _ProfilePageState extends State<ProfilePage> {
       var credentials = await SecureStorage().getCredentials();
       String myUsername = credentials['username'] ?? '';
       final response = await http.get(
-        Uri.parse('https://yourserver.com/api/infoboxes')
+        Uri.parse('${AppConfig.serverUrl}/api/infoboxes')
             .replace(queryParameters: {
           'username': myUsername,
         }),
@@ -688,7 +689,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         var username = credentials['username'];
                         try {
                           var response = await http.post(
-                            Uri.parse('https://yourserver.com/api/delete_box'),
+                            Uri.parse('${AppConfig.serverUrl}/api/delete_box'),
                             headers: {
                               'Content-Type': 'application/json; charset=UTF-8',
                             },
@@ -1319,7 +1320,7 @@ class _ProfileTopBoxState extends State<ProfileTopBox> {
   void fetchDataFromServer() async {
     try {
       var response =
-          await http.get(Uri.parse('https://yourserver.com/api/profile_data'));
+          await http.get(Uri.parse('${AppConfig.serverUrl}/api/profile_data'));
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
         setState(() {
@@ -1357,7 +1358,7 @@ class _ProfileTopBoxState extends State<ProfileTopBox> {
   void sendDataToServer(String text, String fieldType) async {
     try {
       var response = await http.post(
-        Uri.parse('https://yourserver.com/api/profile_data'),
+        Uri.parse('${AppConfig.serverUrl}/api/profile_data'),
         body: json.encode({'fieldType': fieldType, 'text': text}),
       );
 
@@ -1449,7 +1450,7 @@ class _ProfilePicturesBoxState extends State<ProfilePicturesBox> {
       var credentials = await SecureStorage().getCredentials();
       var username = credentials['username'];
       var response = await http.get(Uri.parse(
-          'https://yourserver.com/api/get_pictures?username=$username'));
+          '${AppConfig.serverUrl}/api/get_pictures?username=$username'));
 
       if (response.statusCode == 200) {
         setState(() {
@@ -1544,7 +1545,7 @@ class _ProfilePicState extends State<ProfilePic> {
     try {
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('https://yourserver.com/api/upload_picture'),
+        Uri.parse('${AppConfig.serverUrl}/api/upload_picture'),
       );
       request.fields['username'] = username;
       request.files.add(
@@ -1570,7 +1571,7 @@ class _ProfilePicState extends State<ProfilePic> {
   Future<void> deleteImage(String username, String pictureUrl) async {
     try {
       var response = await http.post(
-        Uri.parse('https://yourserver.com/api/delete_picture'),
+        Uri.parse('${AppConfig.serverUrl}/api/delete_picture'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -2084,30 +2085,37 @@ class _SignUpPageState extends State<SignUpPage> {
   String? selectedPreferredGender;
 
   Future<String?> sendDataToServer() async {
-    if (1 + 1 == 2) return null;
     try {
+      print('lord');
       var response = await http.post(
-        Uri.parse('https://yourserver.com/signup'),
-        body: {
+        Uri.parse('${AppConfig.serverUrl}/signup'),
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode({
           'username': usernameController.text,
           'password': passwordController.text,
           'email': emailController.text,
           'age': ageController.text,
           'gender': selectedGender,
           'preferredGender': selectedPreferredGender,
-        },
+        }),
       );
+      print('hello');
 
       if (response.statusCode == 200) {
+        print('if');
         SecureStorage()
             .storeCredentials(usernameController.text, passwordController.text);
         return null;
       } else {
         // Error occurred
+        print(response.statusCode);
         return response.body;
       }
     } catch (e) {
       // Exception handling
+      print(e);
       return 'Error sending data';
     }
   }
@@ -2180,7 +2188,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     selectedGender = newValue;
                   });
                 },
-                items: <String>['Man', 'Woman', 'Non-Binary']
+                items: <String>['Male', 'Female', 'Non-Binary']
                     .map<DropdownMenuItem<String>>((String value) {
                   return DropdownMenuItem<String>(
                     value: value,
@@ -2200,7 +2208,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     selectedPreferredGender = newValue;
                   });
                 },
-                items: <String>['Man', 'Woman', 'Any']
+                items: <String>['Male', 'Female', 'Any']
                     .map<DropdownMenuItem<String>>((String value) {
                   return DropdownMenuItem<String>(
                     value: value,
@@ -2273,14 +2281,16 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController passwordController = TextEditingController();
 
   Future<String?> sendDataToServer() async {
-    if (1 + 1 == 2) return null;
     try {
       var response = await http.post(
-        Uri.parse('https://yourserver.com/login'),
-        body: {
+        Uri.parse('${AppConfig.serverUrl}/login'),
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode({
           'username': usernameController.text,
           'password': passwordController.text,
-        },
+        }),
       );
 
       if (response.statusCode == 200) {
@@ -2392,7 +2402,12 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-class SpotifyorCustom extends StatelessWidget {
+class SpotifyorCustom extends StatefulWidget {
+  @override
+  State<SpotifyorCustom> createState() => _SpotifyorCustomState();
+}
+
+class _SpotifyorCustomState extends State<SpotifyorCustom> {
   final client = SpotifyOAuth2Client(
     customUriScheme: 'com.soundmates',
     redirectUri: 'com.soundmates://callback',
@@ -2417,20 +2432,17 @@ class SpotifyorCustom extends StatelessWidget {
         clientId: '79162274865743698734ad317e97304e',
         clientSecret: '04735cc3cfac41d9a4d54b29a0e06a66',
       );
-
       return [
         accessTokenResponse.accessToken.toString(),
         accessTokenResponse.refreshToken.toString()
       ];
     } catch (e) {
-      print('Error during authentication: $e');
       return [];
     }
   }
 
   Future<List<String>> topgenres(accessToken) async {
     if (accessToken == []) {
-      print('Access Token not available');
       return [];
     }
 
@@ -2440,17 +2452,15 @@ class SpotifyorCustom extends StatelessWidget {
         headers: {"Authorization": 'Bearer ${accessToken[0]}'},
       );
       if (response.statusCode == 200) {
-        print(json.decode(response.body));
         var genres = parseGenres(json.decode(response.body));
         return genres;
       } else {
-        print('Error fetching genres: ${response.statusCode}');
+        print(response.body);
         return [];
       }
       // Parse the response and update the UI
       // Assuming you have a method to parse the JSON response to a list of playlist names
     } catch (e) {
-      print('Error fetching genres: $e');
       return [];
     }
   }
@@ -2466,10 +2476,27 @@ class SpotifyorCustom extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             GestureDetector(
-              onTap: () {
-                var credentials = authenticate();
-                var genres = topgenres(credentials);
-                sendDataToServer(genres);
+              onTap: () async {
+                showAlert(
+                    'Spotify has yet to review our app, please use the custom option for now');
+                // var credentials = await authenticate();
+                // var genres = await topgenres(credentials);
+                // print('here');
+                // print(genres);
+                // var genreWithValue =
+                //     genres.map((genre) => {genre: 69}).toList();
+                // print(genreWithValue);
+                // var serverres = await sendDataToServer(genreWithValue);
+
+                // if (serverres == 'good') {
+                //   if (!mounted) return;
+                //   Navigator.push(
+                //     context,
+                //     MaterialPageRoute(builder: (context) => MyHomePage()),
+                //   );
+                // } else {
+                //   print(serverres);
+                // }
                 // do the http request to put the genres in the database
               },
               child: Container(
@@ -2534,31 +2561,57 @@ class SpotifyorCustom extends StatelessWidget {
     return genres.toSet().toList();
   }
 
-  Future<String?> sendDataToServer(genres) async {
-    if (1 + 1 == 2) return null;
+  Future<String?> sendDataToServer(genreWithValue) async {
     try {
       var credentials = await SecureStorage().getCredentials();
       var username = credentials['username'];
+      print(genreWithValue);
       var response = await http.post(
-        Uri.parse('https://yourserver.com/login'),
-        body: {
-          'username': username, // idk if this is right
-          'genres': genres,
+        Uri.parse('${AppConfig.serverUrl}/api/update_genres'),
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
         },
+        body: jsonEncode({
+          'username': username, // idk if this is right
+          'genres': genreWithValue,
+        }),
       );
-
+      print('hello');
       if (response.statusCode == 200) {
+        print('if');
         //SecureStorage()
         //  .storeCredentials(usernameController.text, passwordController.text);
-        return null;
+        return 'good';
       } else {
+        print('else');
         // Error occurred
         return 'Error sending data';
       }
     } catch (e) {
+      print(e);
       // Exception handling
       return 'Error sending data';
     }
+  }
+
+  void showAlert(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Error'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -2568,38 +2621,7 @@ class GenreSelect extends StatefulWidget {
 }
 
 class _GenreSelectState extends State<GenreSelect> {
-  List<String> genres = [
-    'Rock',
-    'Pop',
-    'Hip Hop',
-    'Rap',
-    'Country',
-    'Jazz',
-    'Classical',
-    'Electronic',
-    'Metal',
-    'R&B',
-    'Reggae',
-    'Folk',
-    'Blues',
-    'Punk',
-    'Indie',
-    'Soul',
-    'Funk',
-    'Disco',
-    'Techno',
-    'House',
-    'EDM',
-    'Dubstep',
-    'Trap',
-    'Drum & Bass',
-    'Ambient',
-    'Reggaeton',
-    'Ska',
-    'Gospel',
-    'Latin',
-    'K-Pop',
-  ];
+  List<String> genres = ['Rock'];
   Map<String, double> selectedGenres = {};
   List<String> filteredGenres = [];
 
@@ -2618,26 +2640,64 @@ class _GenreSelectState extends State<GenreSelect> {
   Future<List<String>> fetchGenres() async {
     try {
       final response =
-          await http.get(Uri.parse('https://yourserver.com/genres'));
+          await http.get(Uri.parse('${AppConfig.serverUrl}/genres'));
       if (response.statusCode == 200) {
-        List<dynamic> genresJson = json.decode(response.body);
-        return genresJson.map((genre) => genre.toString()).toList();
+        var body = json.decode(response.body);
+        var genresJson = body['genres'] as List;
+        var genres = genresJson.map((genre) => genre.toString()).toList();
+        return genres;
+        //List<dynamic> genresJson = json.decode(response.body);
+        //return genres.map((genre) => genre.toString()).toList();
       } else {
+        print('else');
         throw Exception('Failed to load genres');
       }
     } catch (e) {
+      print(e);
       return [];
+    }
+  }
+
+  Future<String?> sendDataToServer(genres) async {
+    try {
+      var credentials = await SecureStorage().getCredentials();
+      var username = credentials['username'];
+      var response = await http.post(
+        Uri.parse('${AppConfig.serverUrl}/api/update_genres'),
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode({
+          'username': username, // idk if this is right
+          'genres': selectedGenres,
+        }),
+      );
+      print('hello');
+      if (response.statusCode == 200) {
+        print('if');
+        //SecureStorage()
+        //  .storeCredentials(usernameController.text, passwordController.text);
+        return 'good';
+      } else {
+        print('else');
+        // Error occurred
+        return 'Error sending data';
+      }
+    } catch (e) {
+      print(e);
+      // Exception handling
+      return 'Error sending data';
     }
   }
 
   @override
   void initState() {
-    super.initState();
     fetchGenres().then((fetchedGenres) {
       setState(() {
         genres = fetchedGenres;
       });
     });
+    super.initState();
   }
 
   @override
@@ -2744,10 +2804,16 @@ class _GenreSelectState extends State<GenreSelect> {
         padding: const EdgeInsets.fromLTRB(0, 0, 0, 8.0),
         child: GestureDetector(
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => MyHomePage()),
-            );
+            var serverres = sendDataToServer(selectedGenres);
+
+            if (serverres == 'good') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => MyHomePage()),
+              );
+            } else {
+              print(serverres);
+            }
           },
           child: Container(
             height: 50,
@@ -2953,7 +3019,7 @@ class _CustomSocialDialogState extends State<CustomSocialDialog> {
       var credentials = await SecureStorage().getCredentials();
       var username = credentials['username'];
       var response = await http.get(
-          Uri.parse('https://yourserver.com/api/mysocials?username=$username'));
+          Uri.parse('${AppConfig.serverUrl}/api/mysocials?username=$username'));
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
         setState(() {
@@ -2974,7 +3040,7 @@ class _CustomSocialDialogState extends State<CustomSocialDialog> {
       var credentials = await SecureStorage().getCredentials();
       var username = credentials[0];
       var response = await http.post(
-        Uri.parse('https://yourserver.com/api/update_mysocials'),
+        Uri.parse('${AppConfig.serverUrl}/api/update_mysocials'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -3117,7 +3183,7 @@ class _CustomBoxDialogState extends State<CustomBoxDialog> {
       var credentials = await SecureStorage().getCredentials();
       var username = credentials['username'];
       var response = await http.post(
-        Uri.parse('https://yourserver.com/api/addbox'),
+        Uri.parse('${AppConfig.serverUrl}/api/addbox'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
         },
