@@ -143,25 +143,25 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 -- Table `soundmates`.`super_likes`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `soundmates`.`super_likes` ;
+-- DROP TABLE IF EXISTS `soundmates`.`super_likes` ;
 
-CREATE TABLE IF NOT EXISTS `soundmates`.`super_likes` (
-  `liker_id` INT NOT NULL,
-  `liked_id` INT NOT NULL,
-  PRIMARY KEY (`liker_id`, `liked_id`),
-  INDEX `fk_user_has_user_user4_idx` (`liked_id` ASC) VISIBLE,
-  INDEX `fk_user_has_user_user3_idx` (`liker_id` ASC) VISIBLE,
-  CONSTRAINT `fk_user_has_user_user3`
-    FOREIGN KEY (`liker_id`)
-    REFERENCES `soundmates`.`user` (`user_id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT `fk_user_has_user_user4`
-    FOREIGN KEY (`liked_id`)
-    REFERENCES `soundmates`.`user` (`user_id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
+-- CREATE TABLE IF NOT EXISTS `soundmates`.`super_likes` (
+--   `liker_id` INT NOT NULL,
+--   `liked_id` INT NOT NULL,
+--   PRIMARY KEY (`liker_id`, `liked_id`),
+--   INDEX `fk_user_has_user_user4_idx` (`liked_id` ASC) VISIBLE,
+--   INDEX `fk_user_has_user_user3_idx` (`liker_id` ASC) VISIBLE,
+--   CONSTRAINT `fk_user_has_user_user3`
+--     FOREIGN KEY (`liker_id`)
+--     REFERENCES `soundmates`.`user` (`user_id`)
+--     ON DELETE NO ACTION
+--     ON UPDATE NO ACTION,
+--   CONSTRAINT `fk_user_has_user_user4`
+--     FOREIGN KEY (`liked_id`)
+--     REFERENCES `soundmates`.`user` (`user_id`)
+--     ON DELETE NO ACTION
+--     ON UPDATE NO ACTION)
+-- ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------

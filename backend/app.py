@@ -1,10 +1,12 @@
-from flask import Flask,request, jsonify
+from flask import Flask,request, jsonify, send_from_directory
 from flask_mysqldb import MySQL
 from werkzeug.security import generate_password_hash, check_password_hash
 import yaml
 import random
 import geopy.distance
-from datetime import date
+import datetime
+from werkzeug.utils import secure_filename
+import os
 app = Flask(__name__)
 
 # Configure MySQL
@@ -13,6 +15,9 @@ app.config['MYSQL_HOST'] = db['mysql_host']
 app.config['MYSQL_USER'] = db['mysql_user']
 app.config['MYSQL_PASSWORD'] = db['mysql_password']
 app.config['MYSQL_DB'] = db['mysql_db']
+server = 'http://soundmates.ddns.net:5000'
+server_image = server + '/images/'
+image_folder = './images/'
 
 mysql = MySQL(app)
 
@@ -22,6 +27,11 @@ mysql = MySQL(app)
 #     age = today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
 #     return age
 
+
+@app.route('/images/<filename>')
+def serve_image(filename):
+
+    return send_from_directory(image_folder, filename)
 
 
 # Routes
@@ -35,19 +45,27 @@ def index():
 def swipe():
     # Get 6 users from database that are in acceptable range of user's location if cached users are not available
     # If cached users are available, return cached users
-    lat = request.json['latitude']
-    long = request.json['longitude']
-    username = request.json['username']
+    username = request.args.get('username')
+    print(username)
     cur = mysql.connection.cursor()
-    query = "SELECT user_id,gender,prefered_gender FROM user WHERE username = %s"
+    query = "SELECT user_id, gender , preferred_gender, location_long, location_lat FROM user WHERE username = %s"
+
     print("got here")
     cur.execute(query, (username,))
     rv = cur.fetchall()
+    if len(rv) == 0:
+        cur.close()
+        return jsonify({"results" :[]}), 200
     userID = rv[0][0]
+    print(userID)
     gender = rv[0][1]
-    prefered_gender = rv[0][2]
+    preferred_gender = rv[0][2]
+    long = rv[0][3]
+    print(long)
+    lat = rv[0][4]
+    print(lat)
     query =""" 
-    SELECT u.username, u.age, u.name, u.job,
+    SELECT u.user_id, u.username, u.age, u.name, u.job,
         (6371 * acos(
             cos(radians(%s)) 
             * cos(radians(location_lat)) 
@@ -67,9 +85,9 @@ def swipe():
         WHERE user2_id = %s AND user1_id = u.user_id
     )
     AND u.user_id NOT IN (
-        SELECT liked_id 
-        FROM soundmates.super_likes 
-        WHERE liker_id = %s
+        SELECT object_id
+        FROM soundmates.interaction 
+        WHERE subject_id = %s AND (type = 'superlike' OR type = 'like')
     ) 
 """
     filter_rejected = """AND u.user_id NOT IN ( 
@@ -78,25 +96,29 @@ def swipe():
         )"""
     query += filter_rejected
     filter_gender = """AND u.user_id IN (SELECT user_id FROM user 
-                        WHERE (prefered_gender = u.gender OR prefered_gender = 'any') 
-                        AND (gender = u.prefered_gender OR u.prefered = 'any'))"""
+                        WHERE (preferred_gender = u.gender OR preferred_gender = 'any') 
+                        AND (gender = u.preferred_gender OR u.preferred_gender = 'any'))"""
     query += filter_gender
     filter_music = """AND u.user_id IN (SELECT user_id FROM preference
                         WHERE genre_genre_id IN (SELECT genre_genre_id FROM preference WHERE user_id = %s AND percentage >= 50) AND percentage >= 50) """
-    query += filter_music
+    #query += filter_music
     priority_to_interactions = """ ORDER BY CASE WHEN u.user_id IN (SELECT user_id FROM soundmates.interaction WHERE subject_id = %s AND type = 'like') THEN 1 ELSE 2 END"""
     limit_by = """ LIMIT 20"""
     cur = mysql.connection.cursor()
-    cur.execute(query + priority_to_interactions + limit_by, (lat, long, lat, username, userID, userID, userID, userID, userID, userID, userID))
+    cur.execute(query + priority_to_interactions + limit_by, (lat, long, lat, username, userID, userID, userID, userID, userID, userID))
     rv = cur.fetchall()
+    #print(rv)
     if len(rv) == 0:
-        cur.execute(query + limit_by, (lat, long, lat, username, userID, userID, userID, userID, userID, userID))
+        cur.execute(query + limit_by, (lat, long, lat, username, userID, userID, userID, userID, userID))
         rv = cur.fetchall()
+        #print(rv)
     rv = [profile_swipe(x) for x in rv] 
-    return rv
+    print({"results" : rv})
+    return jsonify({"results" :rv}), 200
 # Helper function
 def profile_swipe(profile):
     # Get user's photos
+    print(profile)
     query = f"SELECT * FROM photo WHERE user_id = {profile[0]}"
     cur = mysql.connection.cursor()
     cur.execute(query)
@@ -108,15 +130,15 @@ def profile_swipe(profile):
     cur.close()
     result = {}
     result["username"] = profile[1]
-    result["age"] = profile[2]
+    result["age"] = int(profile[2])
     result["name"] = profile[3]
     result["distance"] = str(round(profile[-1],1)) + "km"
     result["job"] = profile[4]
-    result["photoUrls"] = [x[2] for x in photos]
-    result["boxes"] = [x[1] for x in box]
+    result["photoUrls"] = [server_image + x[2] for x in photos]
+    result["boxes"] = [(x[2],x[3]) for x in box]
     return result
   
-@app.route('/login', methods=['GET'])
+@app.route('/login', methods=['POST'])
 def login():
 #     # Check if user exists in database
     username = request.json['username']
@@ -128,7 +150,7 @@ def login():
     user = cur.fetchone()
     cur.close()
 
-    if user and check_password_hash(user[1], password):
+    if user and password == user[1]:
         return jsonify({'message': 'Login successful'}), 200
     else:
         return jsonify({'message': 'Incorrect username or password'}), 400
@@ -147,10 +169,7 @@ def signup():
     rv = cur.fetchall()
     if len(rv) != 0:
         return jsonify({'message': 'Username already exists'}), 400
-    v = list(x for x in request.json.values())
-    attr = v[:2] 
-    attr += [v[0]]
-    attr += v[2:]
+    attr = list(x for x in request.json.values())
     attr[-1] = attr[-1].lower()
     attr[-2] = attr[-2].lower()
     attr = tuple(attr)
@@ -173,32 +192,27 @@ def profile():
     
     return jsonify(rv)
 
-@app.route('/get_profile', methods=['POST']) 
+@app.route('/api/change_profile_data', methods=['POST']) 
 def update_profile():
     cur = mysql.connection.cursor()
     username = request.json['username']
-    cur.execute("SELECT * FROM user WHERE username = %s", (username,))
-    rv = cur.fetchall()
-    if len(rv) == 0:
-        return jsonify({'message': 'User does not exist'}), 400
+    nameAge = request.json['NameAge']
+    job = request.json['Job']
     try:
-        if 'name' in request.json:
-            cur.execute("UPDATE user SET name = %s WHERE username = %s", (request.json['name'], username))
-        if 'email' in request.json:
-            cur.execute("UPDATE user SET email = %s WHERE username = %s", (request.json['email'], username))
-        if 'age' in request.json:
-            cur.execute("UPDATE user SET age = %s WHERE username = %s", (request.json['age'], username))
-        if 'prefered_gender' in request.json:
-            cur.execute("UPDARE user SET prefered_gender = %s WHERE username = %s", (request.json['prefered_gender'], username))
-        if 'job' in request.json:
-            cur.execute("UPDATE user SET job = %s WHERE username = %s", (request.json['job'], username))
-        if 'email' in request.json:
-            cur.execute("UPDATE user SET email = %s WHERE username = %s", (request.json['email'], username))
+        
+        nameAge = nameAge.split(',')
+        if int(nameAge[1]) < 18:
+            return jsonify({'message': 'Illegal'}), 400
+        cur.execute("UPDATE user SET name = %s WHERE username = %s", (nameAge[0], username))
+        cur.execute("UPDATE user SET age = %s WHERE username = %s", (nameAge[1], username))
+        cur.execute("UPDATE user SET job = %s WHERE username = %s", (job, username))
         mysql.connection.commit()
         cur.close()
         return jsonify({'message': 'Profile updated successfully'}), 200
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'message': 'Invalid field type'}), 400
+
+
 
 @app.route('/api/delete_picture', methods=['POST'])
 def delete_picture():
@@ -212,12 +226,9 @@ def delete_picture():
     cur = mysql.connection.cursor()
     try:
         # Delete the specified picture
+        picture_url = picture_url.replace(server_image, '')
         cur.execute("DELETE FROM photo WHERE photo_url = %s AND user_id = (SELECT user_id FROM user WHERE username = %s)", (picture_url, username))
         mysql.connection.commit()
-
-        # Check if the file was actually deleted
-        if cur.rowcount == 0:
-            return jsonify({'message': 'Picture not found'}), 404
 
         # Retrieve the remaining pictures and adjust their order
         cur.execute("SELECT photo_url, `order` FROM photo WHERE user_id = (SELECT user_id FROM user WHERE username = %s) ORDER BY `order`", (username,))
@@ -231,6 +242,8 @@ def delete_picture():
                 mysql.connection.commit()
 
         cur.close()
+        delete_path = os.path.join(image_folder, picture_url)
+        os.remove(delete_path)
         return jsonify({'message': 'Picture deleted successfully'}), 200
 
     except Exception as e:
@@ -239,11 +252,11 @@ def delete_picture():
 
 
 
-@app.route('/matches', methods=['GET'])
+@app.route('/api/matches', methods=['GET'])
 def matches():
-    if 'username' not in request.json:
+    if 'username' not in request.args:
         return jsonify({'message': "No username given (this isn't supposed to happen)"}), 400
-    username = request.json['username']
+    username = request.args.get('username')
     cur = mysql.connection.cursor()
     cur.execute("SELECT user_id FROM user WHERE username = %s", (username,))
     rv = cur.fetchall()
@@ -253,7 +266,7 @@ def matches():
     cur.execute("""SELECT * FROM soundmates.Match WHERE user1_id = %s OR user2_id = %s""", (userID, userID))
     rv = cur.fetchall()
     if len(rv) == 0:
-        return jsonify({'message': 'No matches found'}), 400
+        return jsonify({"answers" : []}), 200
     query = ""
     results = []
     for match in rv:
@@ -278,14 +291,14 @@ def liked_you():
                     u.username, 
                     p.photo_url           
                     FROM 
-                    soundmates.super_likes s 
-                    JOIN user u ON u.user_id = s.liker_id 
+                    soundmates.interaction i 
+                    JOIN user u ON u.user_id = i.subject_id 
                     JOIN 
                         (SELECT * FROM photo WHERE `order` IN (SELECT MIN(`order`) FROM photo GROUP BY user_id)) p 
                     ON 
                     u.user_id = p.user_id 
                     WHERE 
-                    s.liked_id = %s
+                    i.object = %s
                     """, (userID,))
     rv = cur.fetchall()
     cur.close()
@@ -303,18 +316,23 @@ def get_user_id():
 @app.route('/api/profile_data', methods=['GET'])
 def get_profile_data():
     # Assuming there's a way to identify the user (e.g., token, session, etc.)
-    user_id = get_user_id()  # implemented earlier on 
+    if 'username' not in request.args:
+        return jsonify({'message': 'Username is required'}), 400
+    username = request.args.get('username') # implemented earlier on 
     cur = mysql.connection.cursor()
-    cur.execute("SELECT name, age, job FROM user WHERE user_id = %s", (user_id,))
+    cur.execute("SELECT name, age, job FROM user WHERE username = %s", (username,))
     profile_data = cur.fetchone()
     cur.close()
 
     if profile_data:
         name, age, job = profile_data
-        age = age(age)  # this implemented earlier on 
-        return jsonify({'nameAge': f'{name}, {age}', 'jobTitle': job})
+        print(name, age, job)
+        if job is None:
+            return jsonify({'nameAge': f'{name}, {age}', 'jobTitle': ''})
+        else:
+            return jsonify({'nameAge': f'{name}, {age}', 'jobTitle': job})
     else:
-        return jsonify({'message': 'Profile data not found'}), 404
+        return jsonify({'nameAge': '', 'jobTitle': ''}), 200
 
 
 #endpoint to get the user's photos
@@ -331,20 +349,17 @@ def get_pictures():
     cur.close()
 
     if photos_data:
-        pictures = [photo[0] for photo in photos_data]
+        pictures = [ server_image + photo[0] for photo in photos_data]
         return jsonify(pictures)
     else:
-        return jsonify({'message': 'No pictures found'}), 404
+        return jsonify([]), 200
 
-#endpoint to upload the user's photos
-from werkzeug.utils import secure_filename
-import os
+
 
 # Configuration for file uploads
-UPLOAD_FOLDER = '/path/to/upload/directory'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -360,21 +375,23 @@ def upload_picture():
     if file.filename == '':
         return jsonify({'message': 'No selected file'}), 400
     if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(file_path)
+        extension = file.filename.rsplit('.', 1)[1].lower()
+        datee = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        filename = username + str(datee) + '.' + extension
+        file_path = os.path.join(image_folder, filename)
 
         cur = mysql.connection.cursor()
-
         # Get the current maximum order value
         cur.execute("SELECT MAX(`order`) FROM photo WHERE user_id = (SELECT user_id FROM user WHERE username = %s)", (username,))
         max_order_result = cur.fetchone()
+        print(max_order_result)
         next_order = max_order_result[0] + 1 if max_order_result and max_order_result[0] is not None else 1
-
+        print(next_order)
         # Insert the new photo with the next order value
-        cur.execute("INSERT INTO photo (user_id, `order`, photo_url) VALUES ((SELECT user_id FROM user WHERE username = %s), %s, %s)", (username, next_order, file_path))
+        cur.execute("INSERT INTO photo (user_id, `order`, photo_url) VALUES ((SELECT user_id FROM user WHERE username = %s), %s, %s)", (username, next_order, filename))
         mysql.connection.commit()
         cur.close()
+        file.save(file_path)
 
         return jsonify({'message': 'File uploaded successfully'}), 200
     else:
@@ -417,18 +434,23 @@ def update_genres():
         # Delete all existing genres for the user
         cur.execute("DELETE FROM preference WHERE user_userid = (SELECT user_id FROM user WHERE username = %s)", (username,))
         mysql.connection.commit()
+        
         # Insert the new genres
         cur.execute("SELECT genre FROM genre")
         genres_data = cur.fetchall()
-        for percentage,genre in genres:
+        genres_data = [genre[0] for genre in genres_data]
+        for genre in genres:
+            percentage = genres[genre]
+            print(genre, percentage)
             if genre not in genres_data:
                 cur.execute("INSERT INTO genre (genre) VALUES (%s)", (genre,))
                 mysql.connection.commit()
-            cur.execute("INSERT INTO preference (user_id, genre_genre_id, percentage) VALUES ((SELECT user_id FROM user WHERE username = %s), (SELECT genre_id FROM genre WHERE genre = %s), %s)", (username, genre, percentage))
+            cur.execute("INSERT INTO preference (user_userid, genre_genre_id, percentage) VALUES ((SELECT user_id FROM user WHERE username = %s), (SELECT genre_id FROM genre WHERE genre = %s), %s)", (username, genre, percentage))
             mysql.connection.commit()
 
         return jsonify({'message': 'Genres updated successfully'}), 200
     except Exception as e:
+        print(e)
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
@@ -438,30 +460,43 @@ def update_genres():
 @app.route('/api/mysocials', methods=['GET'])
 def get_socials():
     username = request.args.get('username')
+    print(username)
     if not username:
         return jsonify({'message': 'Username is required'}), 400
-
-    cur = mysql.connection.cursor()
-    cur.execute("""
-        SELECT s.social_info, p.photo_url 
-        FROM socials s
-        JOIN user u ON u.user_id = s.user_id
-        LEFT JOIN photo p ON u.user_id = p.user_id 
-        WHERE u.username = %s
-        ORDER BY p.order
-        LIMIT 1
-    """, (username,))
-    user_data = cur.fetchone()
-    cur.close()
-
-    if user_data:
+    try:    
+        cur = mysql.connection.cursor()
+        cur.execute("""
+            SELECT s.social_info 
+            FROM socials s
+            JOIN user u ON u.user_id = s.user_id
+            WHERE u.username = %s
+            LIMIT 1
+        """, (username,))
+        user_data = cur.fetchone()
+        cur.execute(""" 
+            SELECT photo_url from photo 
+                    JOIN user ON photo.user_id = user.user_id 
+                    WHERE user.username = %s AND photo.order = 1
+        """, (username,))
+        photo_url = cur.fetchone()
+        cur.close()
+        if not photo_url:
+            photo_url = 'pog.png'
+        else:
+            photo_url = photo_url[0]
+        photo_url = server_image + photo_url
+        print(user_data, photo_url)
+        if not user_data:
+            user_data = ''
         social_data = {
             'socials': user_data[0],
-            'photoUrl': user_data[1]
+            'photoUrl': photo_url
         }
         return jsonify(social_data)
-    else:
-        return jsonify({'message': 'User not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 
 #endpoint to update the socials 
 @app.route('/api/update_mysocials', methods=['POST'])
@@ -469,24 +504,26 @@ def update_socials():
     data = request.json
     username = data.get('username')
     socials = data.get('socials')
-
-    if not username or socials is None:
+    print(username, socials)
+    if (not username) or (not socials):
         return jsonify({'message': 'Username and socials are required'}), 400
 
     cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM socials WHERE user_id = (SELECT user_id FROM user WHERE username = %s)", (username,))
+    if cur.rowcount == 0:
+        # Insert socials
+        cur.execute("INSERT INTO socials (user_id, social_info) VALUES ((SELECT user_id FROM user WHERE username = %s), %s)", (username, socials))
+        mysql.connection.commit()
+        cur.close()
+        return jsonify({'message': 'Social data updated successfully'}), 200
     cur.execute("""
         UPDATE socials 
         SET social_info = %s 
         WHERE user_id = (SELECT user_id FROM user WHERE username = %s)
     """, (socials, username))
     mysql.connection.commit()
-    updated_rows = cur.rowcount
     cur.close()
-
-    if updated_rows > 0:
-        return jsonify({'message': 'Social data updated successfully'}), 200
-    else:
-        return jsonify({'message': 'User not found'}), 404
+    return jsonify({'message': 'Social data updated successfully'}), 200
 
 #endpoint to add box
 @app.route('/api/addbox', methods=['POST'])
@@ -508,10 +545,16 @@ def add_box():
     if user_id_result:
         user_id = user_id_result[0]
         # Inserting the new box into the database
-        cur.execute("INSERT INTO box (user_id, title, description) VALUES (%s, %s, %s)", (user_id, title, content))
+        cur.execute("SELECT * FROM box WHERE user_id = %s", (user_id,))
+        next_order = 1
+        if cur.rowcount != 0:
+            cur.execute("SELECT MAX(`order`) FROM box WHERE user_id = %s", (user_id,))
+            max_order_result = cur.fetchone()[0]
+            next_order = max_order_result + 1 
+        cur.execute("INSERT INTO box (user_id, title, description,`order`) VALUES (%s, %s, %s, %s)", (user_id, title, content, next_order))
         mysql.connection.commit()
         cur.close()
-        return jsonify({'message': 'Box added successfully'}), 201
+        return jsonify({'message': 'Box added successfully'}), 200
     else:
         cur.close()
         return jsonify({'message': 'User not found'}), 404
@@ -554,16 +597,18 @@ def user_interaction():
         # and it has columns for storing the user_id of the acting user,
         # the user_id of the target user, and the type of interaction
         cur.execute("""
-            INSERT INTO interaction (subject_id, object_id, type)
+            INSERT INTO interaction (subject_id, object_id, type, `date`)
             VALUES (
                 (SELECT user_id FROM user WHERE username = %s),
                 (SELECT user_id FROM user WHERE username = %s),
+                %s,
                 %s
             )
-        """, (username, target_username, interaction_type))
+        """, (username, target_username, interaction_type, datetime.datetime.now()))
         mysql.connection.commit()
         return jsonify({'message': 'Interaction recorded successfully'}), 200
     except Exception as e:
+        print(e)
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
@@ -609,7 +654,8 @@ def get_infoboxes():
             WHERE user_id = (SELECT user_id FROM user WHERE username = %s)
         """, (username,))
         boxes = cur.fetchall()
-        
+        if not boxes:
+            return jsonify([]), 200
         # Formatting the fetched data
         box_data = [{'title': box[0], 'content': box[1]} for box in boxes]
         return jsonify(box_data)
