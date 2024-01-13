@@ -35,9 +35,16 @@ class SecureStorage {
   }
 
   Future<Position> getLocation() async {
+    print('1');
     String? positionString = await _storage.read(key: 'position');
-    Map<String, dynamic> positionMap = jsonDecode(positionString!);
+    print('2');
+    if (positionString == null) {
+      return Future.error('No saved position found');
+    }
+    Map<String, dynamic> positionMap = jsonDecode(positionString);
+    print('3');
     Position position = Position.fromMap(positionMap);
+    print('4');
     return position;
   }
 }
@@ -114,6 +121,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+    _getLocationAndSendToServer();
   }
 
   void _onItemTapped(int index) {
@@ -124,12 +132,14 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _getLocationAndSendToServer() async {
     try {
+      print('getting location');
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
+        print('location services not enabled');
         // Location services are not enabled, handle accordingly
         return;
       }
-
+      print('ok');
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
@@ -138,30 +148,39 @@ class _MyHomePageState extends State<MyHomePage> {
           return;
         }
       }
-
+      print('getting position');
       if (permission == LocationPermission.deniedForever) {
         // Permissions are permanently denied, handle accordingly
         return;
       }
 
       Position position = await Geolocator.getCurrentPosition();
-      Position lastPosition = await SecureStorage().getLocation();
-      if (lastPosition.latitude != position.latitude ||
-          lastPosition.longitude != position.longitude) {
+      try {
+        Position lastPosition = await SecureStorage().getLocation();
+        if (lastPosition.latitude != position.latitude ||
+            lastPosition.longitude != position.longitude) {
+          await SecureStorage().storeLocation(position);
+          print('sending location');
+          await _sendLocationToServer(position);
+        }
+      } catch (e) {
         await SecureStorage().storeLocation(position);
+        print('sending location');
         await _sendLocationToServer(position);
       }
     } catch (e) {
       // Handle exceptions
+      print('catching error');
+      print(e);
     }
   }
 
   Future<void> _sendLocationToServer(Position position) async {
     var credentials = await SecureStorage().getCredentials();
     var username = credentials['username'];
-
+    print('sending location');
     await http.post(
-      Uri.parse('${AppConfig.serverUrl}/update_location'),
+      Uri.parse('${AppConfig.serverUrl}/api/update_location'),
       headers: {
         'Content-Type': 'application/json; charset=UTF-8',
       },
@@ -171,6 +190,7 @@ class _MyHomePageState extends State<MyHomePage> {
         'longitude': position.longitude.toString(),
       }),
     );
+    print('sent location');
     // Handle the response from the server
   }
 
@@ -299,14 +319,16 @@ class _SwipePageState extends State<SwipePage> {
           Pair('My Favourite Book', 'The Perks of Being a Wallflower')
         ]);
     profiles = [dummyprofile, dummy2, dummyprofile];
-    if (1 + 1 == 2) return;
-    final response =
-        await http.get(Uri.parse('${AppConfig.serverUrl}/get_profiles_swipe'));
-    List<dynamic> profileJson = json.decode(response.body)['results'];
-    setState(() {
-      profiles = profileJson.map((json) => Profile.fromJson(json)).toList();
-    });
+    var credentials = await SecureStorage().getCredentials();
+    String myUsername = credentials['username'] ?? '';
+    final response = await http.get(Uri.parse(
+        '${AppConfig.serverUrl}/get_profiles_swipe?username=$myUsername'));
+
     if (response.statusCode == 200) {
+      List<dynamic> profileJson = json.decode(response.body)['results'];
+      setState(() {
+        profiles = profileJson.map((json) => Profile.fromJson(json)).toList();
+      });
       return;
     } else {
       return;
@@ -570,12 +592,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  List<Pair<String, String>> myinfo = [
-    Pair('This is a test',
-        "This is some longer text to see what happens. The test of course continues"),
-    Pair('This is the second box',
-        "This is some longer text to see what happens. The test of course continues"),
-  ];
+  List<Pair<String, String>> myinfo = [];
 
   @override
   void initState() {
@@ -594,7 +611,8 @@ class _ProfilePageState extends State<ProfilePage> {
         }),
       );
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        print('boxes success');
+        final data = json.decode(response.body) as List;
         setState(() {
           myinfo = data.map<Pair<String, String>>((item) {
             return Pair(item['title'], item['content']);
@@ -615,7 +633,7 @@ class _ProfilePageState extends State<ProfilePage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Boxes Error'),
-          content: Text('we could not load your box data, please try again'),
+          content: Text(message),
           actions: <Widget>[
             TextButton(
               child: Text('OK'),
@@ -637,7 +655,7 @@ class _ProfilePageState extends State<ProfilePage> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return CustomBoxDialog();
+        return CustomBoxDialog(onBoxAdded: refreshBoxes);
       },
     );
   }
@@ -835,11 +853,12 @@ class Profile {
     List<Pair<String, String>> boxes = boxesJson.map((box) {
       return Pair<String, String>(box[0], box[1]);
     }).toList();
+    var photoUrls1 = json['photoUrls'] as List;
     return Profile(
       username: json['username'],
       name: json['name'],
       age: json['age'],
-      photoUrls: json['photoUrls'],
+      photoUrls: photoUrls1.map((url) => url.toString()).toList(),
       distance: json['distance'],
       job: json['job'],
       boxes: boxes,
@@ -1304,28 +1323,33 @@ class ProfileTopBox extends StatefulWidget {
 }
 
 class _ProfileTopBoxState extends State<ProfileTopBox> {
-  TextEditingController textController1 = TextEditingController();
-  TextEditingController textController2 = TextEditingController();
+  String nameAge = '';
+  String jobTitle = '';
 
   @override
   void initState() {
     super.initState();
     fetchDataFromServer();
-    textController1
-        .addListener(() => sendDataToServer(textController1.text, 'field1'));
-    textController2
-        .addListener(() => sendDataToServer(textController2.text, 'field2'));
   }
 
   void fetchDataFromServer() async {
     try {
-      var response =
-          await http.get(Uri.parse('${AppConfig.serverUrl}/api/profile_data'));
+      var credentials = await SecureStorage().getCredentials();
+      String myUsername = credentials['username'] ?? '';
+      var response = await http.get(
+          Uri.parse('${AppConfig.serverUrl}/api/profile_data')
+              .replace(queryParameters: {
+        'username': myUsername,
+      }));
+      //print(response.body);
+
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
+        print(data['nameAge']);
+        print(data['jobTitle']);
         setState(() {
-          textController1.text = data['nameAge'];
-          textController2.text = data['jobTitle'];
+          nameAge = data['nameAge'];
+          jobTitle = data['jobTitle'];
         });
       } else {
         showAlert('We could not load your profile data, please try again');
@@ -1357,13 +1381,19 @@ class _ProfileTopBoxState extends State<ProfileTopBox> {
 
   void sendDataToServer(String text, String fieldType) async {
     try {
+      var credentials = await SecureStorage().getCredentials();
+      String myUsername = credentials['username'] ?? '';
       var response = await http.post(
-        Uri.parse('${AppConfig.serverUrl}/api/profile_data'),
-        body: json.encode({'fieldType': fieldType, 'text': text}),
+        Uri.parse('${AppConfig.serverUrl}/api/change_profile_data'),
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: json.encode(
+            {'username': myUsername, 'fieldType': fieldType, 'text': text}),
       );
 
       if (response.statusCode == 200) {
-        setState(() {});
+        fetchDataFromServer();
       } else {
         showAlert('We could not save your profile data, please try again');
       }
@@ -1372,62 +1402,49 @@ class _ProfileTopBoxState extends State<ProfileTopBox> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 5, 5, 10),
-      child: SizedBox(
-          height: 80,
-          child: Column(children: [
-            TextField(
-              controller: textController1,
-              decoration: InputDecoration(
-                hintText: 'Name, Age',
-                hintStyle: TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: 30,
-                  color: Colors.white,
-                ),
-                contentPadding: EdgeInsets.all(0),
-                isDense: true,
-                border: InputBorder.none,
-              ),
-              style: TextStyle(
-                fontFamily: 'Roboto',
-                fontSize: 30,
-                color: Colors.white,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            TextField(
-              controller: textController2,
-              decoration: InputDecoration(
-                hintText: 'Job Title/School',
-                hintStyle: TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: 20,
-                  color: Colors.white,
-                ),
-                contentPadding: EdgeInsets.all(0),
-                isDense: true,
-                border: InputBorder.none,
-              ),
-              style: TextStyle(
-                fontFamily: 'Roboto',
-                fontSize: 20,
-                color: Colors.white,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ])),
+  void showBoxPopup(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CustomTopBoxDialog(onrefresh: fetchDataFromServer);
+      },
     );
   }
 
   @override
-  void dispose() {
-    textController1.dispose();
-    textController2.dispose();
-    super.dispose();
+  Widget build(BuildContext context) {
+    String text1 = nameAge == '' ? 'Name, Age' : nameAge;
+    String text2 = jobTitle == '' ? 'Job Title/School' : jobTitle;
+    return GestureDetector(
+      onTap: () {
+        showBoxPopup(context);
+      },
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 5, 5, 10),
+        child: SizedBox(
+            height: 80,
+            child: Column(children: [
+              Text(
+                text1,
+                style: TextStyle(
+                  fontFamily: 'Roboto',
+                  fontSize: 30,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              Text(
+                text2,
+                style: TextStyle(
+                  fontFamily: 'Roboto',
+                  fontSize: 20,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ])),
+      ),
+    );
   }
 }
 
@@ -1456,6 +1473,7 @@ class _ProfilePicturesBoxState extends State<ProfilePicturesBox> {
         setState(() {
           pictures = List<String>.from(json.decode(response.body));
         });
+        print(pictures);
       } else {
         showAlert('we could not load your pictures, please try again');
       }
@@ -1577,10 +1595,10 @@ class _ProfilePicState extends State<ProfilePic> {
         },
         body: jsonEncode({
           'username': username,
-          'pictureUrl': pictureUrl,
+          'picture_url': pictureUrl,
         }),
       );
-
+      print(response.body);
       if (response.statusCode == 200) {
         widget.onImageUpload();
       } else {
@@ -2081,6 +2099,7 @@ class _SignUpPageState extends State<SignUpPage> {
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController ageController = TextEditingController();
+  final TextEditingController nameController = TextEditingController();
   String? selectedGender;
   String? selectedPreferredGender;
 
@@ -2095,6 +2114,7 @@ class _SignUpPageState extends State<SignUpPage> {
         body: jsonEncode({
           'username': usernameController.text,
           'password': passwordController.text,
+          'name': nameController.text,
           'email': emailController.text,
           'age': ageController.text,
           'gender': selectedGender,
@@ -2128,137 +2148,147 @@ class _SignUpPageState extends State<SignUpPage> {
           title: Text('Sign Up'),
           backgroundColor: Theme.of(context).colorScheme.primary,
         ),
-        body: Container(
-          margin: EdgeInsets.symmetric(
-              horizontal: 20), // Add left and right margins
-          child: Column(
-            mainAxisAlignment:
-                MainAxisAlignment.start, // Align content to the top
-            children: [
-              SizedBox(
-                  height: 100,
-                  width: MediaQuery.of(context).size.width,
-                  child: Align(
-                    alignment: Alignment.center,
-                    child: Text('Soundmates',
-                        style: TextStyle(
-                          fontFamily: 'Basic',
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        )),
-                  )),
-              TextField(
-                controller: usernameController,
-                decoration: InputDecoration(
-                  hintText: 'Username',
+        body: SingleChildScrollView(
+          child: Container(
+            margin: EdgeInsets.symmetric(
+                horizontal: 20), // Add left and right margins
+            child: Column(
+              mainAxisAlignment:
+                  MainAxisAlignment.start, // Align content to the top
+              children: [
+                SizedBox(
+                    height: 100,
+                    width: MediaQuery.of(context).size.width,
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: Text('Soundmates',
+                          style: TextStyle(
+                            fontFamily: 'Basic',
+                            fontSize: 30,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          )),
+                    )),
+                TextField(
+                  controller: usernameController,
+                  decoration: InputDecoration(
+                    hintText: 'Username',
+                  ),
                 ),
-              ),
-              SizedBox(height: 20),
-              TextField(
-                controller: passwordController,
-                decoration: InputDecoration(
-                  hintText: 'Password',
+                SizedBox(height: 20),
+                TextField(
+                  controller: passwordController,
+                  decoration: InputDecoration(
+                    hintText: 'Password',
+                  ),
+                  obscureText: true,
                 ),
-                obscureText: true,
-              ),
-              SizedBox(height: 20),
-              TextField(
-                controller: emailController,
-                decoration: InputDecoration(
-                  hintText: 'Email',
+                SizedBox(height: 20),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    hintText: 'Name',
+                  ),
                 ),
-              ),
-              SizedBox(height: 20),
-              TextField(
-                controller: ageController,
-                decoration: InputDecoration(
-                  hintText: 'Age',
+                SizedBox(height: 20),
+                TextField(
+                  controller: emailController,
+                  decoration: InputDecoration(
+                    hintText: 'Email',
+                  ),
                 ),
-              ),
-              SizedBox(height: 20),
-              DropdownButtonFormField<String>(
-                value: selectedGender,
-                decoration: InputDecoration(
-                  hintText: 'Select Gender',
-                  border: OutlineInputBorder(),
+                SizedBox(height: 20),
+                TextField(
+                  controller: ageController,
+                  decoration: InputDecoration(
+                    hintText: 'Age',
+                  ),
                 ),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    selectedGender = newValue;
-                  });
-                },
-                items: <String>['Male', 'Female', 'Non-Binary']
-                    .map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-              ),
-              SizedBox(height: 20),
-              DropdownButtonFormField<String>(
-                value: selectedPreferredGender,
-                decoration: InputDecoration(
-                  hintText: 'Select Preferred Gender',
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    selectedPreferredGender = newValue;
-                  });
-                },
-                items: <String>['Male', 'Female', 'Any']
-                    .map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () async {
-                  final currentContext = context;
-
-                  String? result = await sendDataToServer();
-
-                  if (result == null) {
-                    // check out if context is still valid
-                    if (!mounted) return;
-
-                    Navigator.pushReplacement(
-                      currentContext,
-                      MaterialPageRoute(
-                        builder: (context) => SpotifyorCustom(),
-                      ),
+                SizedBox(height: 20),
+                DropdownButtonFormField<String>(
+                  value: selectedGender,
+                  decoration: InputDecoration(
+                    hintText: 'Select Gender',
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      selectedGender = newValue;
+                    });
+                  },
+                  items: <String>['Male', 'Female', 'Non-Binary']
+                      .map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
                     );
-                  } else {
-                    if (!mounted) return;
-
-                    // Show an alert dialog
-                    showDialog(
-                      context: currentContext,
-                      builder: (context) {
-                        return AlertDialog(
-                          title: Text('Error'),
-                          content: Text(result),
-                          actions: <Widget>[
-                            TextButton(
-                              child: Text('OK'),
-                              onPressed: () {
-                                Navigator.of(context).pop(); // Close the dialog
-                              },
-                            ),
-                          ],
-                        );
-                      },
+                  }).toList(),
+                ),
+                SizedBox(height: 20),
+                DropdownButtonFormField<String>(
+                  value: selectedPreferredGender,
+                  decoration: InputDecoration(
+                    hintText: 'Select Preferred Gender',
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      selectedPreferredGender = newValue;
+                    });
+                  },
+                  items: <String>['Male', 'Female', 'Any']
+                      .map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
                     );
-                  }
-                },
-                child: Text('Sign Up'),
-              ),
-            ],
+                  }).toList(),
+                ),
+                SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () async {
+                    final currentContext = context;
+
+                    String? result = await sendDataToServer();
+
+                    if (result == null) {
+                      // check out if context is still valid
+                      if (!mounted) return;
+
+                      Navigator.pushReplacement(
+                        currentContext,
+                        MaterialPageRoute(
+                          builder: (context) => SpotifyorCustom(),
+                        ),
+                      );
+                    } else {
+                      if (!mounted) return;
+
+                      // Show an alert dialog
+                      showDialog(
+                        context: currentContext,
+                        builder: (context) {
+                          return AlertDialog(
+                            title: Text('Error'),
+                            content: Text(result),
+                            actions: <Widget>[
+                              TextButton(
+                                child: Text('OK'),
+                                onPressed: () {
+                                  Navigator.of(context)
+                                      .pop(); // Close the dialog
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    }
+                  },
+                  child: Text('Sign Up'),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -2292,7 +2322,8 @@ class _LoginPageState extends State<LoginPage> {
           'password': passwordController.text,
         }),
       );
-
+      print(response.statusCode);
+      print(response.body);
       if (response.statusCode == 200) {
         SecureStorage()
             .storeCredentials(usernameController.text, passwordController.text);
@@ -2621,7 +2652,7 @@ class GenreSelect extends StatefulWidget {
 }
 
 class _GenreSelectState extends State<GenreSelect> {
-  List<String> genres = ['Rock'];
+  List<String> genres = [];
   Map<String, double> selectedGenres = {};
   List<String> filteredGenres = [];
 
@@ -2680,6 +2711,7 @@ class _GenreSelectState extends State<GenreSelect> {
         return 'good';
       } else {
         print('else');
+        print(response.body);
         // Error occurred
         return 'Error sending data';
       }
@@ -2803,10 +2835,10 @@ class _GenreSelectState extends State<GenreSelect> {
       bottomSheet: Padding(
         padding: const EdgeInsets.fromLTRB(0, 0, 0, 8.0),
         child: GestureDetector(
-          onTap: () {
-            var serverres = sendDataToServer(selectedGenres);
-
+          onTap: () async {
+            var serverres = await sendDataToServer(selectedGenres);
             if (serverres == 'good') {
+              if (!mounted) return;
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => MyHomePage()),
@@ -2877,22 +2909,21 @@ class GenreBox extends StatelessWidget {
           ),
           child: Stack(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-                child: Row(
-                  children: [
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        "$genre: \t\t ${percentage.toInt()}%",
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      "$genre: \t\t ${percentage.toInt()}%",
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
               Positioned(
@@ -3022,6 +3053,7 @@ class _CustomSocialDialogState extends State<CustomSocialDialog> {
           Uri.parse('${AppConfig.serverUrl}/api/mysocials?username=$username'));
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
+        print(data);
         setState(() {
           textController.text = data['socials'];
           photoUrl = data['photoUrl'];
@@ -3038,7 +3070,8 @@ class _CustomSocialDialogState extends State<CustomSocialDialog> {
   Future<void> sendSocialToServer() async {
     try {
       var credentials = await SecureStorage().getCredentials();
-      var username = credentials[0];
+      var username = credentials['username'];
+      print(username);
       var response = await http.post(
         Uri.parse('${AppConfig.serverUrl}/api/update_mysocials'),
         headers: {
@@ -3079,6 +3112,7 @@ class _CustomSocialDialogState extends State<CustomSocialDialog> {
 
   @override
   Widget build(BuildContext context) {
+    print(photoUrl);
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       backgroundColor: Colors.transparent,
@@ -3116,7 +3150,7 @@ class _CustomSocialDialogState extends State<CustomSocialDialog> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
                             image: DecorationImage(
-                              image: AssetImage('assets/images/dalle.png'),
+                              image: NetworkImage(photoUrl),
                               fit: BoxFit.cover,
                             ),
                           ),
@@ -3170,6 +3204,10 @@ class _CustomSocialDialogState extends State<CustomSocialDialog> {
 }
 
 class CustomBoxDialog extends StatefulWidget {
+  final Function onBoxAdded;
+
+  CustomBoxDialog({required this.onBoxAdded});
+
   @override
   State<CustomBoxDialog> createState() => _CustomBoxDialogState();
 }
@@ -3193,7 +3231,10 @@ class _CustomBoxDialogState extends State<CustomBoxDialog> {
           'username': username
         }),
       );
+      print(response.statusCode);
+      print(response.body);
       if (response.statusCode == 200) {
+        widget.onBoxAdded();
         if (!mounted) return;
         Navigator.of(context).pop();
       } else {
@@ -3427,6 +3468,141 @@ class _CustomGenreAlertState extends State<CustomGenreAlert> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class CustomTopBoxDialog extends StatefulWidget {
+  final Function onrefresh;
+
+  CustomTopBoxDialog({required this.onrefresh});
+
+  @override
+  State<CustomTopBoxDialog> createState() => _CustomTopBoxDialogState();
+}
+
+class _CustomTopBoxDialogState extends State<CustomTopBoxDialog> {
+  TextEditingController textController1 = TextEditingController();
+  TextEditingController textController2 = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+            width: MediaQuery.of(context).size.width * 0.9,
+            height: 200,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary,
+                width: 1.0,
+              ),
+              color: Theme.of(context).colorScheme.background,
+            ),
+            child:
+                Column(mainAxisAlignment: MainAxisAlignment.start, children: [
+              SizedBox(height: 10),
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: Theme.of(context).colorScheme.surface,
+                ),
+                width: MediaQuery.of(context).size.width * 0.7,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: TextField(
+                    controller: textController1,
+                    decoration: InputDecoration(
+                        hintText: 'Name, Age', border: InputBorder.none),
+                  ),
+                ),
+              ),
+              SizedBox(height: 10),
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: Theme.of(context).colorScheme.surface,
+                ),
+                width: MediaQuery.of(context).size.width * 0.7,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: TextField(
+                    controller: textController2,
+                    decoration: InputDecoration(
+                        hintText: 'Job Title/School', border: InputBorder.none),
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: 10,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text('Cancel'),
+                  ),
+                  SizedBox(
+                    width: 10,
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      var credentials = await SecureStorage().getCredentials();
+                      var username = credentials['username'];
+                      print(username);
+                      var response = await http.post(
+                        Uri.parse(
+                            '${AppConfig.serverUrl}/api/change_profile_data'),
+                        headers: {
+                          'Content-Type': 'application/json; charset=UTF-8',
+                        },
+                        body: json.encode({
+                          'NameAge': textController1.text,
+                          'Job': textController2.text,
+                          'username': username
+                        }),
+                      );
+                      print(response.statusCode);
+                      print(response.body);
+                      if (response.statusCode == 200) {
+                        widget.onrefresh();
+                        if (!mounted) return;
+                        Navigator.of(context).pop();
+                      } else {
+                        showAlert(
+                            'There was an error saving that box. Please try again.');
+                      }
+                    },
+                    child: Text('Update'),
+                  )
+                ],
+              )
+            ])));
+  }
+
+  void showAlert(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Error'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }
