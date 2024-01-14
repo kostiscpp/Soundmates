@@ -124,6 +124,8 @@ DROP TABLE IF EXISTS `soundmates`.`Match` ;
 CREATE TABLE IF NOT EXISTS `soundmates`.`Match` (
   `user1_id` INT NOT NULL,
   `user2_id` INT NOT NULL,
+  `is_new1` TINYINT(1) NOT NULL DEFAULT 1,
+  `is_new2` TINYINT(1) NOT NULL DEFAULT 1,
   PRIMARY KEY (`user1_id`, `user2_id`),
   INDEX `fk_user_has_user_user2_idx` (`user2_id` ASC) VISIBLE,
   INDEX `fk_user_has_user_user1_idx` (`user1_id` ASC) VISIBLE,

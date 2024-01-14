@@ -96,20 +96,26 @@ def swipe():
         )"""
     query += filter_rejected
     filter_gender = """AND u.user_id IN (SELECT user_id FROM user 
-                        WHERE (preferred_gender = u.gender OR preferred_gender = 'any') 
-                        AND (gender = u.preferred_gender OR u.preferred_gender = 'any'))"""
+                         WHERE (preferred_gender = %s OR preferred_gender = 'any') 
+                         AND (gender = %s OR %s = 'any'))"""
     query += filter_gender
-    filter_music = """AND u.user_id IN (SELECT user_id FROM preference
-                        WHERE genre_genre_id IN (SELECT genre_genre_id FROM preference WHERE user_id = %s AND percentage >= 50) AND percentage >= 50) """
-    #query += filter_music
+    filter_music = """AND u.user_id IN (SELECT p.user_userid FROM preference p
+                        WHERE p.genre_genre_id IN (SELECT pp.genre_genre_id FROM preference pp WHERE pp.user_userid = %s AND pp.percentage >= 50) AND p.percentage >= 50) """
+    query += filter_music
     priority_to_interactions = """ ORDER BY CASE WHEN u.user_id IN (SELECT user_id FROM soundmates.interaction WHERE subject_id = %s AND type = 'like') THEN 1 ELSE 2 END"""
     limit_by = """ LIMIT 20"""
     cur = mysql.connection.cursor()
-    cur.execute(query + priority_to_interactions + limit_by, (lat, long, lat, username, userID, userID, userID, userID, userID, userID))
+    cur.execute(query + priority_to_interactions + limit_by, (lat, long, lat, username, userID, userID, userID, 
+                                                              userID, userID,
+                                                              gender, preferred_gender, preferred_gender,
+                                                              userID, userID))
     rv = cur.fetchall()
     #print(rv)
     if len(rv) == 0:
-        cur.execute(query + limit_by, (lat, long, lat, username, userID, userID, userID, userID, userID))
+        cur.execute(query + limit_by, (lat, long, lat, username, userID, userID, userID, 
+                                       userID, userID, 
+                                       gender, preferred_gender, preferred_gender,
+                                       userID))
         rv = cur.fetchall()
         #print(rv)
     rv = [profile_swipe(x) for x in rv] 
@@ -133,7 +139,7 @@ def profile_swipe(profile):
     result["age"] = int(profile[2])
     result["name"] = profile[3]
     result["distance"] = str(round(profile[-1],1)) + "km"
-    result["job"] = profile[4]
+    result["job"] = "" if profile[4] is None else profile[4]
     result["photoUrls"] = [server_image + x[2] for x in photos]
     result["boxes"] = [(x[2],x[3]) for x in box]
     return result
@@ -273,14 +279,42 @@ def matches():
         print(match)
         print(userID)
         if match[0] == userID:
-            query = f"SELECT u.username, p.photo_url FROM user u JOIN photo p ON u.user_id = p.user_id WHERE u.user_id = {match[1]} LIMIT 1"
+            query_user = f"""SELECT u.username, u.name, u.age
+                        FROM user u  WHERE u.user_id = {match[1]} LIMIT 1"""
+            query_photo = f"""SELECT p.photo_url FROM photo p WHERE p.user_id = {match[1]} LIMIT 1"""
+            query_socials = f"""SELECT s.social_info FROM socials s WHERE s.user_id = {match[1]} LIMIT 1"""
         else:
-            query = f"SELECT u.username, p.photo_url FROM user u JOIN photo p ON u.user_id = p.user_id WHERE u.user_id = {match[0]} LIMIT 1"
-        cur.execute(query)
-        rv = cur.fetchall()
-        results.append(rv)
+            query_user = f"""SELECT u.username, u.name, u.age
+                        FROM user u  WHERE u.user_id = {match[0]} LIMIT 1"""
+            query_photo = f"""SELECT p.photo_url FROM photo p WHERE p.user_id = {match[0]} LIMIT 1"""
+            query_socials = f"""SELECT s.social_info FROM socials s WHERE s.user_id = {match[0]} LIMIT 1"""
+        cur.execute(query_user)
+        user = cur.fetchall()[0]
+        cur.execute(query_photo)
+        photo = cur.fetchall()
+        if len(photo) == 0:
+            photo = 'pog.png'
+        else:
+            photo = photo[0][0]
+        cur.execute(query_socials)
+        socials = cur.fetchall()
+        if len(socials) == 0:
+            socials = ''
+        else:
+            socials = socials[0][0]
+        if match[0] == userID:
+            cur.execute("""UPDATE soundmates.Match SET is_new1 = 0 WHERE user1_id = %s AND user2_id = %s""", (match[0], match[1]))
+            truthvalue = match[2]
+            print(1)
+        else:
+            cur.execute("""UPDATE soundmates.Match SET is_new2 = 0 WHERE user1_id = %s AND user2_id = %s""", (match[0], match[1]))
+            truthvalue = match[3]
+            print(2)
+        mysql.connection.commit()
+        results.append({"username":user[0], "age" : user[2],"photoUrl":server_image + photo , "name":user[1], "socials":socials, "new":truthvalue})
+    print(results)
     cur.close()
-    return jsonify(results)
+    return jsonify({"answers": results})
 
 @app.route('/liked_you', methods=['GET'])
 def liked_you():
@@ -302,6 +336,7 @@ def liked_you():
                     """, (userID,))
     rv = cur.fetchall()
     cur.close()
+    print(rv)
     return jsonify([{"username":x[0],"photo_url":x[1]} for x in rv])
 def get_user_id():
     #query the database to get the user_id
@@ -488,12 +523,15 @@ def get_socials():
         print(user_data, photo_url)
         if not user_data:
             user_data = ''
+        else:
+            user_data = user_data[0]
         social_data = {
-            'socials': user_data[0],
+            'socials': user_data,
             'photoUrl': photo_url
         }
         return jsonify(social_data)
     except Exception as e:
+        print(e)
         return jsonify({'error': str(e)}), 500
 
 
@@ -606,6 +644,25 @@ def user_interaction():
             )
         """, (username, target_username, interaction_type, datetime.datetime.now()))
         mysql.connection.commit()
+        if interaction_type == 'like' or interaction_type == 'superlike':
+            # Check if the target user has liked the acting user
+            cur.execute("""
+                SELECT * 
+                FROM interaction 
+                WHERE subject_id = (SELECT user_id FROM user WHERE username = %s)
+                AND object_id = (SELECT user_id FROM user WHERE username = %s)
+                AND (type = 'like' or type = 'superlike')
+            """, (target_username, username))
+            if cur.rowcount != 0:
+                # If the target user has liked the acting user, insert a match
+                cur.execute("""
+                    INSERT INTO soundmates.`Match` (user1_id, user2_id)
+                    VALUES (
+                        (SELECT user_id FROM user WHERE username = %s),
+                        (SELECT user_id FROM user WHERE username = %s)
+                    )
+                """, (username, target_username))
+                mysql.connection.commit()
         return jsonify({'message': 'Interaction recorded successfully'}), 200
     except Exception as e:
         print(e)
@@ -624,17 +681,35 @@ def get_liked():
     try:
         # Assuming 'interaction' table has a type column where 'like' indicates a like interaction
         cur.execute("""
-            SELECT i.*, u.username as target_username
-            FROM interaction i
-            JOIN user u ON i.object_id = u.user_id
-            WHERE i.subject_id = (SELECT user_id FROM user WHERE username = %s)
-            AND i.type = 'like'
-        """, (username,))
+            SELECT i.subject_id
+            FROM interaction i WHERE i.object_id = (SELECT user_id FROM user WHERE username = %s) AND i.type = 'superlike'""", (username,))
         likes = cur.fetchall()
+        liked_data = []
+        for user in likes:
+            query_user = f"""SELECT u.username, u.name, u.age
+                        FROM user u  WHERE u.user_id = {user[0]} LIMIT 1"""
+            query_photo = f"""SELECT p.photo_url FROM photo p WHERE p.user_id = {user[0]} LIMIT 1"""
+            query_socials = f"""SELECT s.social_info FROM socials s WHERE s.user_id = {user[0]} LIMIT 1"""
+            cur.execute(query_user)
+            user = cur.fetchall()[0]
+            cur.execute(query_photo)
+            photo = cur.fetchall()
+            if len(photo) == 0:
+                photo = 'pog.png'
+            else:
+                photo = photo[0][0]
+            cur.execute(query_socials)
+            socials = cur.fetchall()
+            if len(socials) == 0:
+                socials = ''
+            else:
+                socials = socials[0][0]
+            liked_data.append({"username":user[0], "age" : user[2],"photoUrl":server_image + photo , "name":user[1], "socials":socials})
         # Format the data as needed. This is a basic example.
-        liked_data = [{'target_username': like['target_username']} for like in likes]
+        print(liked_data)
         return jsonify({'answers': liked_data})
     except Exception as e:
+        print(e)
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
