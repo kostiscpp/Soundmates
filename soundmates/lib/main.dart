@@ -430,6 +430,7 @@ class _LikedPageState extends State<LikedPage> {
         }),
       );
       if (response.statusCode == 200) {
+        print(response.body);
         final jsonData = json.decode(response.body);
         setState(() {
           liked = jsonData['answers'];
@@ -520,6 +521,7 @@ class _MatchesPageState extends State<MatchesPage> {
         setState(() {
           matches = jsonData['answers'];
         });
+        print(matches);
       } else {
         if (!mounted) return;
         _showErrorDialog(context, 'Failed to load matches.');
@@ -567,7 +569,7 @@ class _MatchesPageState extends State<MatchesPage> {
                   )),
             )),
         for (var match in matches)
-          if (match['new'] == true)
+          if (match['new'] >= 0)
             NewMatchBox(
               name: match['name'],
               age: match['age'],
@@ -2965,7 +2967,7 @@ class _CustomMatchSocialDialogState extends State<CustomMatchSocialDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       backgroundColor: Colors.transparent,
       child: Container(
-        height: 300,
+        height: 190,
         width: MediaQuery.of(context).size.width * 0.8,
         decoration: BoxDecoration(
           color: Colors.transparent,
@@ -3051,7 +3053,9 @@ class _CustomSocialDialogState extends State<CustomSocialDialog> {
       var username = credentials['username'];
       var response = await http.get(
           Uri.parse('${AppConfig.serverUrl}/api/mysocials?username=$username'));
+      print(response.statusCode);
       if (response.statusCode == 200) {
+        print(response.body);
         var data = json.decode(response.body);
         print(data);
         setState(() {
