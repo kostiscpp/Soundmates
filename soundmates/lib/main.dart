@@ -1846,17 +1846,7 @@ class MyInfobox extends StatelessWidget {
   }
 }
 
-class SoundInfoBox extends StatefulWidget {
-  final String title;
-  final String audioUrl;
 
-  SoundInfoBox({required this.title, required this.audioUrl});
-
-  @override
-  _SoundInfoBoxState createState() => _SoundInfoBoxState();
-}
-
-class _SoundInfoBoxState extends State<SoundInfoBox> {
   final FlutterSoundPlayer _audioPlayer = FlutterSoundPlayer();
 
   bool _isPlaying = false;
