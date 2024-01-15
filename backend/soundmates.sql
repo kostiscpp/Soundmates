@@ -91,29 +91,46 @@ CREATE TABLE IF NOT EXISTS `soundmates`.`preference` (
   CONSTRAINT `fk_user_has_genre_genre1`
     FOREIGN KEY (`genre_genre_id`)
     REFERENCES `soundmates`.`genre` (`genre_id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE RESRICT
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
+
+-----------------------------------------------------
+-- Table `soundmates`.`sound`
+-----------------------------------------------------
+DROP TABLE IF EXISTS `soundmates`.`sound`;
+CREATE TABLE IF NOT EXISTS `soundmates`.`sound` (
+  `sound_id` INT NOT NULL AUTO_INCREMENT,
+  `sound_blob` BLOB NOT NULL,
+  PRIMARY KEY (`sound_id`)
+) ENGINE = InnoDB;
+
 
 
 -- -----------------------------------------------------
 -- Table `soundmates`.`box`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `soundmates`.`box` ;
-
+DROP TABLE IF EXISTS `soundmates`.`box`;
 CREATE TABLE IF NOT EXISTS `soundmates`.`box` (
   `order` INT NOT NULL,
   `user_id` INT NOT NULL,
   `title` TEXT NOT NULL,
   `description` TEXT NOT NULL,
+  `is_text` TINYINT(1) NOT NULL DEFAULT 1,
+  `sound_id` INT NULL,
   PRIMARY KEY (`user_id`, `order`),
   INDEX `fk_box_user1_idx` (`user_id` ASC) VISIBLE,
   CONSTRAINT `fk_box_user1`
     FOREIGN KEY (`user_id`)
     REFERENCES `soundmates`.`user` (`user_id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_box_sound1`
+    FOREIGN KEY (`sound_id`) 
+    REFERENCES soundmates.sound (`sound_id`)
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE
+) ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
@@ -132,13 +149,13 @@ CREATE TABLE IF NOT EXISTS `soundmates`.`Match` (
   CONSTRAINT `fk_user_has_user_user1`
     FOREIGN KEY (`user1_id`)
     REFERENCES `soundmates`.`user` (`user_id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+    ON DELETE RESRICT
+    ON UPDATE CASCADE,
   CONSTRAINT `fk_user_has_user_user2`
     FOREIGN KEY (`user2_id`)
     REFERENCES `soundmates`.`user` (`user_id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE RESRICT
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 
@@ -194,6 +211,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 -- Table `soundmates`.`socials'
 -- -----------------------------------------------------
+DROP TABLE IF EXISTS `soundmates`.`socials` ;
 CREATE TABLE IF NOT EXISTS `soundmates`.`socials` (
   `user_id` INT NOT NULL,
   `social_info` TEXT NOT NULL,
@@ -205,6 +223,7 @@ CREATE TABLE IF NOT EXISTS `soundmates`.`socials` (
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
+
 
 
 
