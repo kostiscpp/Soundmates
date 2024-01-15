@@ -740,46 +740,47 @@ def get_infoboxes():
     finally:
         cur.close()
 
-UPLOAD_FOLDER = './sounds/'
-ALLOWED_EXTENSIONS = {'wav', 'mp3', 'ogg'}  # Add or remove file types as needed
+# UPLOAD_FOLDER = './sounds/'
+# ALLOWED_EXTENSIONS = {'wav', 'mp3', 'ogg'}  # Add or remove file types as needed
 
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+# app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-#endpoint to get the sound 
-@app.route('/sounds/<filename>',methods=['GET'])
-def serve_sound(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+# def allowed_file(filename):
+#     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+# #endpoint to get the sound 
+# @app.route('/sounds/<filename>',methods=['GET'])
+# def serve_sound(filename):
+#     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-#endpoint to upload sound 
-@app.route('/api/upload_sound',methods=['POST'])
-def upload_sound():endpoint to get the sound 
-@app.route('/sounds/<filename>',methods=['GET'])
-def serve_sound(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-    if 'sound' not in request.files:
-        return jsonify({'message': 'No sound file provided'}), 400
-    file = request.files['sound']
-    if file.filename == '':
-        return jsonify({'message': 'No selected file'}), 400
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(file_path)
+# #endpoint to upload sound 
+# @app.route('/api/upload_sound',methods=['POST'])
+# def upload_sound(): #endpoint to get the sound
+#     if 'sound' not in request.files:
+#         return jsonify({'message': 'No sound file provided'}), 400
+#     file = request.files['sound']
+#     if file.filename == '':
+#         return jsonify({'message': 'No selected file'}), 400
+#     if file and allowed_file(file.filename):
+#         filename = secure_filename(file.filename)
+#         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+#         file.save(file_path)
 
-        #Save the file URL to the database 
-         # Save the file URL to the database
+#         #Save the file URL to the database 
+#          # Save the file URL to the database
         
-        file_url = server + f'/sounds/{filename}'  #adjust if needed 
-        cur = mysql.connection.cursor()
-        cur.execute("INSERT INTO sound (sound_url) VALUES (%s)", (file_url,))
-        mysql.connection.commit()
-        cur.close()
+#         file_url = server + f'/sounds/{filename}'  #adjust if needed 
+#         cur = mysql.connection.cursor()
+#         cur.execute("INSERT INTO sound (sound_url) VALUES (%s)", (file_url,))
+#         mysql.connection.commit()
+#         cur.close()
 
-        return jsonify({'message': 'File uploaded successfully','url':file_url}), 200
-    else:
-        return jsonify({'message': 'Invalid file format'}), 400
+#         return jsonify({'message': 'File uploaded successfully','url':file_url}), 200
+#     else:
+#         return jsonify({'message': 'Invalid file format'}), 400
+    
+# @app.route('/sounds/<filename>',methods=['GET'])
+# def serve_sound(filename):
+#     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
     
 #endpoint to delete box
 @app.route('/api/delete_box', methods=['POST'])
