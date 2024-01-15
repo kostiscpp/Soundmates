@@ -546,7 +546,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  List<Pair<String, String>> myinfo = [];
+  List<Trio<String, String, int>> myinfo = [];
 
   @override
   void initState() {
@@ -567,8 +567,8 @@ class _ProfilePageState extends State<ProfilePage> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as List;
         setState(() {
-          myinfo = data.map<Pair<String, String>>((item) {
-            return Pair(item['title'], item['content']);
+          myinfo = data.map<Trio<String, String, int>>((item) {
+            return Trio(item['title'], item['content'], item['isText']);
           }).toList();
         });
       } else {
@@ -675,8 +675,9 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           ),
           Column(
-            children: myinfo
-                .map((pair) => MyInfobox(
+            children: myinfo.map((pair) {
+              return pair.third == 1
+                  ? MyInfobox(
                       title: pair.first,
                       content: pair.second,
                       onDelete: () async {
@@ -704,8 +705,37 @@ class _ProfilePageState extends State<ProfilePage> {
                           showAlert('Error deleting box');
                         }
                       },
-                    ))
-                .toList(),
+                    )
+                  : MyAudioInfobox(
+                      title: pair.first,
+                      content: pair.second,
+                      onDelete: () async {
+                        var credentials =
+                            await SecureStorage().getCredentials();
+                        var username = credentials['username'];
+                        try {
+                          var response = await http.post(
+                            Uri.parse('${AppConfig.serverUrl}/api/delete_box'),
+                            headers: {
+                              'Content-Type': 'application/json; charset=UTF-8',
+                            },
+                            body: jsonEncode({
+                              'username': username,
+                              'title': pair.first,
+                              'content': pair.second,
+                            }),
+                          );
+                          if (response.statusCode == 200) {
+                            await refreshBoxes();
+                          } else {
+                            showAlert('Error deleting box');
+                          }
+                        } catch (e) {
+                          showAlert('Error deleting box');
+                        }
+                      },
+                    );
+            }).toList(),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -815,7 +845,7 @@ class Profile {
   final String distance;
   final String job;
   final List<String> photoUrls;
-  final List<Pair<String, String>> boxes;
+  final List<Trio<String, String, int>> boxes;
 
   Profile(
       {required this.username,
@@ -828,8 +858,8 @@ class Profile {
 
   factory Profile.fromJson(Map<String, dynamic> json) {
     var boxesJson = json['boxes'] as List;
-    List<Pair<String, String>> boxes = boxesJson.map((box) {
-      return Pair<String, String>(box[0], box[1]);
+    List<Trio<String, String, int>> boxes = boxesJson.map((box) {
+      return Trio<String, String, int>(box[0], box[1], box[2]);
     }).toList();
     var photoUrls1 = json['photoUrls'] as List;
     return Profile(
@@ -1846,6 +1876,118 @@ class MyInfobox extends StatelessWidget {
   }
 }
 
+class AudioInfobox extends StatelessWidget {
+  final String title;
+  final String content;
+
+  AudioInfobox({required this.title, required this.content});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
+      child: Container(
+          decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              color: Theme.of(context).colorScheme.surface),
+          child: Padding(
+              padding: EdgeInsets.fromLTRB(10, 5, 10, 10),
+              child: Column(
+                children: [
+                  Container(
+                      width: MediaQuery.of(context).size.width,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: Colors.white,
+                            width: 1.0,
+                          ),
+                        ),
+                      ),
+                      child: Text(title,
+                          style: TextStyle(
+                            fontFamily: 'Roboto',
+                            fontSize: 20,
+                            color: Colors.white,
+                          ))),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width,
+                    child: Text(content,
+                        style: TextStyle(
+                          fontFamily: 'Roboto',
+                          fontSize: 16,
+                          color: Colors.white,
+                        )),
+                  ),
+                ],
+              ))),
+    );
+  }
+}
+
+class MyAudioInfobox extends StatelessWidget {
+  final String title;
+  final String content;
+  final VoidCallback onDelete;
+
+  MyAudioInfobox(
+      {required this.title, required this.content, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
+      child: Stack(
+        children: [
+          Container(
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: Theme.of(context).colorScheme.surface),
+              child: Padding(
+                  padding: EdgeInsets.fromLTRB(10, 5, 10, 10),
+                  child: Column(
+                    children: [
+                      Container(
+                          width: MediaQuery.of(context).size.width,
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: Colors.white,
+                                width: 1.0,
+                              ),
+                            ),
+                          ),
+                          child: Text(title,
+                              style: TextStyle(
+                                fontFamily: 'Roboto',
+                                fontSize: 20,
+                                color: Colors.white,
+                              ))),
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width,
+                        child: Text(content,
+                            style: TextStyle(
+                              fontFamily: 'Roboto',
+                              fontSize: 16,
+                              color: Colors.white,
+                            )),
+                      ),
+                    ],
+                  ))),
+          Positioned(
+            right: 0,
+            top: 0,
+            child: IconButton(
+              icon: Icon(Icons.close, color: Colors.white),
+              onPressed: onDelete,
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+
 class MoreInfoPage extends StatefulWidget {
   final Profile profile;
 
@@ -1933,7 +2075,7 @@ class _MoreInfoPageState extends State<MoreInfoPage> {
       ),
       Column(
         children: widget.profile.boxes
-            .map((pair) => Infobox(title: pair.first, content: pair.second))
+            .map((pair) {return pair.third ==1 ? Infobox(title: pair.first, content: pair.second): AudioInfobox(title: pair.first, content: pair.second);})
             .toList(),
       ),
     ])));
@@ -1945,6 +2087,14 @@ class Pair<T, U> {
   final U second;
 
   Pair(this.first, this.second);
+}
+
+class Trio<T, U, V> {
+  final T first;
+  final U second;
+  final V third;
+
+  Trio(this.first, this.second, this.third);
 }
 
 class SuggestionPanel extends StatelessWidget {
@@ -3616,7 +3766,6 @@ class _CustomAudioBoxDialogState extends State<CustomAudioBoxDialog> {
   String audioFilePath = '';
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
   final FlutterSoundPlayer _player = FlutterSoundPlayer();
-  bool _isPlayerInitialized = false;
 
   @override
   void initState() {
@@ -3636,7 +3785,7 @@ class _CustomAudioBoxDialogState extends State<CustomAudioBoxDialog> {
 
   Future<void> _initPlayer() async {
     await _player.openAudioSession();
-    setState(() => _isPlayerInitialized = true);
+    setState(() {});
   }
 
   void startRecording() async {
