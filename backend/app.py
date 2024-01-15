@@ -180,6 +180,7 @@ def signup():
     attr[-2] = attr[-2].lower()
     attr = tuple(attr)
     print(attr)
+    
     cur.execute("""INSERT INTO user (username, password, name, email,
   age, gender, preferred_gender, location_long, location_lat) VALUES (%s, %s, %s, %s, %s, %s, %s, 42, 42)""", attr)
     mysql.connection.commit()
