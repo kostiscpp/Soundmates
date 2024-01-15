@@ -10,6 +10,10 @@ import 'package:path/path.dart' as path;
 import 'package:geolocator/geolocator.dart';
 import 'package:oauth2_client/spotify_oauth2_client.dart';
 import 'config.dart';
+import 'package:flutter_sound/flutter_sound.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:http_parser/http_parser.dart';
 
 class SecureStorage {
   final _storage = FlutterSecureStorage();
@@ -35,16 +39,15 @@ class SecureStorage {
   }
 
   Future<Position> getLocation() async {
-    print('1');
     String? positionString = await _storage.read(key: 'position');
-    print('2');
+
     if (positionString == null) {
       return Future.error('No saved position found');
     }
     Map<String, dynamic> positionMap = jsonDecode(positionString);
-    print('3');
+
     Position position = Position.fromMap(positionMap);
-    print('4');
+
     return position;
   }
 }
@@ -132,14 +135,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _getLocationAndSendToServer() async {
     try {
-      print('getting location');
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        print('location services not enabled');
         // Location services are not enabled, handle accordingly
         return;
       }
-      print('ok');
+
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
@@ -148,7 +149,7 @@ class _MyHomePageState extends State<MyHomePage> {
           return;
         }
       }
-      print('getting position');
+
       if (permission == LocationPermission.deniedForever) {
         // Permissions are permanently denied, handle accordingly
         return;
@@ -160,25 +161,23 @@ class _MyHomePageState extends State<MyHomePage> {
         if (lastPosition.latitude != position.latitude ||
             lastPosition.longitude != position.longitude) {
           await SecureStorage().storeLocation(position);
-          print('sending location');
+
           await _sendLocationToServer(position);
         }
       } catch (e) {
         await SecureStorage().storeLocation(position);
-        print('sending location');
+
         await _sendLocationToServer(position);
       }
     } catch (e) {
       // Handle exceptions
-      print('catching error');
-      print(e);
     }
   }
 
   Future<void> _sendLocationToServer(Position position) async {
     var credentials = await SecureStorage().getCredentials();
     var username = credentials['username'];
-    print('sending location');
+
     await http.post(
       Uri.parse('${AppConfig.serverUrl}/api/update_location'),
       headers: {
@@ -190,7 +189,7 @@ class _MyHomePageState extends State<MyHomePage> {
         'longitude': position.longitude.toString(),
       }),
     );
-    print('sent location');
+
     // Handle the response from the server
   }
 
@@ -274,51 +273,6 @@ class _SwipePageState extends State<SwipePage> {
   }
 
   Future<void> fetchProfiles() async {
-    final Profile dummyprofile = Profile(
-        username: 'laurel',
-        age: 19,
-        name: 'Laurel',
-        distance: '6km',
-        job: 'Student',
-        photoUrls: [
-          'https://upload.wikimedia.org/wikipedia/commons/3/33/SYDNEY%2C_AUSTRALIA_-_JANUARY_23_Margot_Robbie_arrives_at_the_Australian_Premiere_of_%27I%2C_Tonya%27_on_January_23%2C_2018_in_Sydney%2C_Australia_%2828074883999%29_%28cropped%29.jpg',
-          'https://hips.hearstapps.com/hmg-prod/images/margot-robbie-attends-the-new-york-premiere-of-asteroid-news-photo-1689698979.jpg?crop=0.733xw:0.489xh;0.107xw,0.0363xh&resize=640:*'
-        ],
-        boxes: [
-          Pair('What I\'m looking for',
-              'Something serious, but open for casual'),
-          Pair('My Favourite Band', 'My Chemical Romance'),
-          Pair('My Hobbies', 'Singing\nDancing\nKick Boxing\nCrossfit'),
-          Pair('Song stuck in my head',
-              'I\'m Not Okay (I Promise) - My Chemical Romance'),
-          Pair('My Favourite Food', 'Pizza'),
-          Pair('My Favourite Movie', 'The Nightmare Before Christmas'),
-          Pair('My Favourite TV Show', 'The Umbrella Academy'),
-          Pair('My Favourite Book', 'The Perks of Being a Wallflower')
-        ]);
-    final Profile dummy2 = Profile(
-        username: 'laurel1',
-        age: 19,
-        name: 'Laurel',
-        distance: '6km',
-        job: 'Student',
-        photoUrls: [
-          'https://upload.wikimedia.org/wikipedia/commons/3/33/SYDNEY%2C_AUSTRALIA_-_JANUARY_23_Margot_Robbie_arrives_at_the_Australian_Premiere_of_%27I%2C_Tonya%27_on_January_23%2C_2018_in_Sydney%2C_Australia_%2828074883999%29_%28cropped%29.jpg',
-          'https://hips.hearstapps.com/hmg-prod/images/margot-robbie-attends-the-new-york-premiere-of-asteroid-news-photo-1689698979.jpg?crop=0.733xw:0.489xh;0.107xw,0.0363xh&resize=640:*'
-        ],
-        boxes: [
-          Pair('What I\'m looking for',
-              'Something serious, but open for casual'),
-          Pair('My Favourite Band', 'My Chemical Romance'),
-          Pair('My Hobbies', 'Singing\nDancing\nKick Boxing\nCrossfit'),
-          Pair('Song stuck in my head',
-              'I\'m Not Okay (I Promise) - My Chemical Romance'),
-          Pair('My Favourite Food', 'Pizza'),
-          Pair('My Favourite Movie', 'The Nightmare Before Christmas'),
-          Pair('My Favourite TV Show', 'The Umbrella Academy'),
-          Pair('My Favourite Book', 'The Perks of Being a Wallflower')
-        ]);
-    profiles = [dummyprofile, dummy2, dummyprofile];
     var credentials = await SecureStorage().getCredentials();
     String myUsername = credentials['username'] ?? '';
     final response = await http.get(Uri.parse(
@@ -430,7 +384,6 @@ class _LikedPageState extends State<LikedPage> {
         }),
       );
       if (response.statusCode == 200) {
-        print(response.body);
         final jsonData = json.decode(response.body);
         setState(() {
           liked = jsonData['answers'];
@@ -521,7 +474,6 @@ class _MatchesPageState extends State<MatchesPage> {
         setState(() {
           matches = jsonData['answers'];
         });
-        print(matches);
       } else {
         if (!mounted) return;
         _showErrorDialog(context, 'Failed to load matches.');
@@ -613,7 +565,6 @@ class _ProfilePageState extends State<ProfilePage> {
         }),
       );
       if (response.statusCode == 200) {
-        print('boxes success');
         final data = json.decode(response.body) as List;
         setState(() {
           myinfo = data.map<Pair<String, String>>((item) {
@@ -662,6 +613,15 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  void showAudioBoxPopup(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CustomAudioBoxDialog(onBoxAdded: refreshBoxes);
+      },
+    );
+  }
+
   void showSocialPopup(BuildContext context) {
     showDialog(
       context: context,
@@ -687,16 +647,32 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           ProfileTopBox(),
           ProfilePicturesBox(),
-          Align(
-            alignment: Alignment.topRight,
-            child: ElevatedButton(
-              onPressed: () => showBoxPopup(context),
-              style: ElevatedButton.styleFrom(
-                shape: CircleBorder(),
-                backgroundColor: Theme.of(context).colorScheme.surface,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Align(
+                alignment: Alignment.topLeft,
+                child: ElevatedButton(
+                  onPressed: () => showBoxPopup(context),
+                  style: ElevatedButton.styleFrom(
+                    shape: CircleBorder(),
+                    backgroundColor: Theme.of(context).colorScheme.surface,
+                  ),
+                  child: Icon(Icons.add),
+                ),
               ),
-              child: Icon(Icons.add),
-            ),
+              Align(
+                alignment: Alignment.topRight,
+                child: ElevatedButton(
+                  onPressed: () => showAudioBoxPopup(context),
+                  style: ElevatedButton.styleFrom(
+                    shape: CircleBorder(),
+                    backgroundColor: Theme.of(context).colorScheme.surface,
+                  ),
+                  child: Icon(Icons.music_note_sharp),
+                ),
+              ),
+            ],
           ),
           Column(
             children: myinfo
@@ -1343,12 +1319,9 @@ class _ProfileTopBoxState extends State<ProfileTopBox> {
               .replace(queryParameters: {
         'username': myUsername,
       }));
-      //print(response.body);
 
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
-        print(data['nameAge']);
-        print(data['jobTitle']);
         setState(() {
           nameAge = data['nameAge'];
           jobTitle = data['jobTitle'];
@@ -1475,7 +1448,6 @@ class _ProfilePicturesBoxState extends State<ProfilePicturesBox> {
         setState(() {
           pictures = List<String>.from(json.decode(response.body));
         });
-        print(pictures);
       } else {
         showAlert('we could not load your pictures, please try again');
       }
@@ -1561,6 +1533,44 @@ class ProfilePic extends StatefulWidget {
 }
 
 class _ProfilePicState extends State<ProfilePic> {
+  final ImagePicker _picker = ImagePicker();
+  XFile? _image;
+
+  Future<void> _showImagePickerOptions() async {
+    showModalBottomSheet<void>(
+        context: context,
+        builder: (BuildContext context) {
+          return Wrap(children: <Widget>[
+            ListTile(
+                leading: Icon(Icons.photo_library),
+                title: Text('Photo Library'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final XFile? image =
+                      await _picker.pickImage(source: ImageSource.gallery);
+                  if (image != null) {
+                    setState(() {
+                      _image = image;
+                    });
+                  }
+                }),
+            ListTile(
+                leading: Icon(Icons.camera_alt),
+                title: Text('Camera'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final XFile? image =
+                      await _picker.pickImage(source: ImageSource.camera);
+                  if (image != null) {
+                    setState(() {
+                      _image = image;
+                    });
+                  }
+                })
+          ]);
+        });
+  }
+
   Future<void> uploadImage(String imagePath, String username) async {
     try {
       var request = http.MultipartRequest(
@@ -1600,7 +1610,6 @@ class _ProfilePicState extends State<ProfilePic> {
           'picture_url': pictureUrl,
         }),
       );
-      print(response.body);
       if (response.statusCode == 200) {
         widget.onImageUpload();
       } else {
@@ -1660,13 +1669,11 @@ class _ProfilePicState extends State<ProfilePic> {
           padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
           child: GestureDetector(
             onTap: () async {
-              final ImagePicker picker = ImagePicker();
-              final XFile? image =
-                  await picker.pickImage(source: ImageSource.gallery);
-              if (image != null) {
+              _showImagePickerOptions();
+              if (_image != null) {
                 var credentials = await SecureStorage().getCredentials();
                 var username = credentials['username'];
-                uploadImage(image.path, username!);
+                uploadImage(_image!.path, username!);
               }
             },
             child: Container(
@@ -2107,7 +2114,6 @@ class _SignUpPageState extends State<SignUpPage> {
 
   Future<String?> sendDataToServer() async {
     try {
-      print('lord');
       var response = await http.post(
         Uri.parse('${AppConfig.serverUrl}/signup'),
         headers: {
@@ -2123,21 +2129,17 @@ class _SignUpPageState extends State<SignUpPage> {
           'preferredGender': selectedPreferredGender,
         }),
       );
-      print('hello');
 
       if (response.statusCode == 200) {
-        print('if');
         SecureStorage()
             .storeCredentials(usernameController.text, passwordController.text);
         return null;
       } else {
         // Error occurred
-        print(response.statusCode);
         return response.body;
       }
     } catch (e) {
       // Exception handling
-      print(e);
       return 'Error sending data';
     }
   }
@@ -2324,8 +2326,7 @@ class _LoginPageState extends State<LoginPage> {
           'password': passwordController.text,
         }),
       );
-      print(response.statusCode);
-      print(response.body);
+
       if (response.statusCode == 200) {
         SecureStorage()
             .storeCredentials(usernameController.text, passwordController.text);
@@ -2488,7 +2489,6 @@ class _SpotifyorCustomState extends State<SpotifyorCustom> {
         var genres = parseGenres(json.decode(response.body));
         return genres;
       } else {
-        print(response.body);
         return [];
       }
       // Parse the response and update the UI
@@ -2514,11 +2514,10 @@ class _SpotifyorCustomState extends State<SpotifyorCustom> {
                     'Spotify has yet to review our app, please use the custom option for now');
                 // var credentials = await authenticate();
                 // var genres = await topgenres(credentials);
-                // print('here');
-                // print(genres);
+
                 // var genreWithValue =
                 //     genres.map((genre) => {genre: 69}).toList();
-                // print(genreWithValue);
+
                 // var serverres = await sendDataToServer(genreWithValue);
 
                 // if (serverres == 'good') {
@@ -2528,7 +2527,6 @@ class _SpotifyorCustomState extends State<SpotifyorCustom> {
                 //     MaterialPageRoute(builder: (context) => MyHomePage()),
                 //   );
                 // } else {
-                //   print(serverres);
                 // }
                 // do the http request to put the genres in the database
               },
@@ -2598,7 +2596,7 @@ class _SpotifyorCustomState extends State<SpotifyorCustom> {
     try {
       var credentials = await SecureStorage().getCredentials();
       var username = credentials['username'];
-      print(genreWithValue);
+
       var response = await http.post(
         Uri.parse('${AppConfig.serverUrl}/api/update_genres'),
         headers: {
@@ -2609,19 +2607,16 @@ class _SpotifyorCustomState extends State<SpotifyorCustom> {
           'genres': genreWithValue,
         }),
       );
-      print('hello');
+
       if (response.statusCode == 200) {
-        print('if');
         //SecureStorage()
         //  .storeCredentials(usernameController.text, passwordController.text);
         return 'good';
       } else {
-        print('else');
         // Error occurred
         return 'Error sending data';
       }
     } catch (e) {
-      print(e);
       // Exception handling
       return 'Error sending data';
     }
@@ -2682,11 +2677,9 @@ class _GenreSelectState extends State<GenreSelect> {
         //List<dynamic> genresJson = json.decode(response.body);
         //return genres.map((genre) => genre.toString()).toList();
       } else {
-        print('else');
         throw Exception('Failed to load genres');
       }
     } catch (e) {
-      print(e);
       return [];
     }
   }
@@ -2705,20 +2698,16 @@ class _GenreSelectState extends State<GenreSelect> {
           'genres': selectedGenres,
         }),
       );
-      print('hello');
+
       if (response.statusCode == 200) {
-        print('if');
         //SecureStorage()
         //  .storeCredentials(usernameController.text, passwordController.text);
         return 'good';
       } else {
-        print('else');
-        print(response.body);
         // Error occurred
         return 'Error sending data';
       }
     } catch (e) {
-      print(e);
       // Exception handling
       return 'Error sending data';
     }
@@ -2737,43 +2726,76 @@ class _GenreSelectState extends State<GenreSelect> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text("Genre Selector"),
       ),
-      body: Padding(
-        padding: EdgeInsets.all(8.0),
-        child: Column(
-          children: [
-            Center(
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  color: Colors.white,
-                ),
-                width: MediaQuery.of(context).size.width * 0.9,
-                child: SingleChildScrollView(
-                  child: TypeAheadField<String>(
-                    textFieldConfiguration: TextFieldConfiguration(
-                      autofocus: true,
-                      style: TextStyle(color: Colors.black),
-                      decoration: InputDecoration(
-                        hintText: 'Search Genre',
-                        prefixIcon: Icon(Icons.search),
-                        filled: true,
-                        fillColor: Colors.white,
-                        hintStyle: TextStyle(color: Colors.grey),
-                      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                Center(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.white,
                     ),
-                    suggestionsCallback: (pattern) {
-                      return genres.where((genre) {
-                        return genre
-                            .toLowerCase()
-                            .contains(pattern.toLowerCase());
-                      }).toList();
-                    },
-                    itemBuilder: (context, suggestion) {
-                      return GestureDetector(
-                        onTap: () {
+                    width: MediaQuery.of(context).size.width * 0.9,
+                    child: SingleChildScrollView(
+                      child: TypeAheadField<String>(
+                        textFieldConfiguration: TextFieldConfiguration(
+                          autofocus: false,
+                          style: TextStyle(color: Colors.black),
+                          decoration: InputDecoration(
+                            hintText: 'Search Genre',
+                            prefixIcon: Icon(Icons.search),
+                            filled: true,
+                            fillColor: Colors.white,
+                            hintStyle: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                        suggestionsCallback: (pattern) {
+                          return genres.where((genre) {
+                            return genre
+                                .toLowerCase()
+                                .contains(pattern.toLowerCase());
+                          }).toList();
+                        },
+                        itemBuilder: (context, suggestion) {
+                          return GestureDetector(
+                            onTap: () {
+                              // Handle suggestion selection here
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return CustomGenreAlert(
+                                    genre: suggestion,
+                                    onSelection: _addGenre,
+                                  );
+                                },
+                              );
+                            },
+                            child: Container(
+                              color: Colors.white, // Set the background color
+                              child: ListTile(
+                                title: Text(
+                                  suggestion,
+                                  style: TextStyle(
+                                    color: Colors.black, // Set the text color
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        noItemsFoundBuilder: (context) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Text('No Genres Found',
+                              textAlign: TextAlign.center),
+                        ),
+                        onSuggestionSelected: (suggestion) {
                           // Handle suggestion selection here
                           showDialog(
                             context: context,
@@ -2785,88 +2807,61 @@ class _GenreSelectState extends State<GenreSelect> {
                             },
                           );
                         },
-                        child: Container(
-                          color: Colors.white, // Set the background color
-                          child: ListTile(
-                            title: Text(
-                              suggestion,
-                              style: TextStyle(
-                                color: Colors.black, // Set the text color
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                    noItemsFoundBuilder: (context) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child:
-                          Text('No Genres Found', textAlign: TextAlign.center),
+                      ),
                     ),
-                    onSuggestionSelected: (suggestion) {
-                      // Handle suggestion selection here
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return CustomGenreAlert(
-                            genre: suggestion,
-                            onSelection: _addGenre,
-                          );
-                        },
+                  ),
+                ),
+                SizedBox(height: 16),
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.72,
+                  child: SingleChildScrollView(
+                      child: Column(
+                    children: selectedGenres.entries.map((entry) {
+                      return GenreBox(
+                        genre: entry.key,
+                        percentage: entry.value,
+                        onSelection: _addGenre,
+                        onDeletion: _removeGenre,
                       );
-                    },
+                    }).toList(),
+                  )),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(0, 0, 0, 8.0),
+            child: GestureDetector(
+              onTap: () async {
+                var serverres = await sendDataToServer(selectedGenres);
+                if (serverres == 'good') {
+                  if (!mounted) return;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => MyHomePage()),
+                  );
+                } else {}
+              },
+              child: Container(
+                height: 50,
+                width: MediaQuery.of(context).size.width * 0.7,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.secondary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Text(
+                    'Continue',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
             ),
-            SizedBox(height: 16),
-            SingleChildScrollView(
-                child: Column(
-              children: selectedGenres.entries.map((entry) {
-                return GenreBox(
-                  genre: entry.key,
-                  percentage: entry.value,
-                  onSelection: _addGenre,
-                  onDeletion: _removeGenre,
-                );
-              }).toList(),
-            )),
-          ],
-        ),
-      ),
-      bottomSheet: Padding(
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 8.0),
-        child: GestureDetector(
-          onTap: () async {
-            var serverres = await sendDataToServer(selectedGenres);
-            if (serverres == 'good') {
-              if (!mounted) return;
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => MyHomePage()),
-              );
-            } else {
-              print(serverres);
-            }
-          },
-          child: Container(
-            height: 50,
-            width: MediaQuery.of(context).size.width * 0.7,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Center(
-              child: Text(
-                'Continue',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold),
-              ),
-            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -3053,11 +3048,10 @@ class _CustomSocialDialogState extends State<CustomSocialDialog> {
       var username = credentials['username'];
       var response = await http.get(
           Uri.parse('${AppConfig.serverUrl}/api/mysocials?username=$username'));
-      print(response.statusCode);
+
       if (response.statusCode == 200) {
-        print(response.body);
         var data = json.decode(response.body);
-        print(data);
+
         setState(() {
           textController.text = data['socials'];
           photoUrl = data['photoUrl'];
@@ -3075,7 +3069,7 @@ class _CustomSocialDialogState extends State<CustomSocialDialog> {
     try {
       var credentials = await SecureStorage().getCredentials();
       var username = credentials['username'];
-      print(username);
+
       var response = await http.post(
         Uri.parse('${AppConfig.serverUrl}/api/update_mysocials'),
         headers: {
@@ -3116,7 +3110,6 @@ class _CustomSocialDialogState extends State<CustomSocialDialog> {
 
   @override
   Widget build(BuildContext context) {
-    print(photoUrl);
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       backgroundColor: Colors.transparent,
@@ -3235,8 +3228,7 @@ class _CustomBoxDialogState extends State<CustomBoxDialog> {
           'username': username
         }),
       );
-      print(response.statusCode);
-      print(response.body);
+
       if (response.statusCode == 200) {
         widget.onBoxAdded();
         if (!mounted) return;
@@ -3559,7 +3551,6 @@ class _CustomTopBoxDialogState extends State<CustomTopBoxDialog> {
                     onPressed: () async {
                       var credentials = await SecureStorage().getCredentials();
                       var username = credentials['username'];
-                      print(username);
                       var response = await http.post(
                         Uri.parse(
                             '${AppConfig.serverUrl}/api/change_profile_data'),
@@ -3572,8 +3563,6 @@ class _CustomTopBoxDialogState extends State<CustomTopBoxDialog> {
                           'username': username
                         }),
                       );
-                      print(response.statusCode);
-                      print(response.body);
                       if (response.statusCode == 200) {
                         widget.onrefresh();
                         if (!mounted) return;
@@ -3607,6 +3596,219 @@ class _CustomTopBoxDialogState extends State<CustomTopBoxDialog> {
           ],
         );
       },
+    );
+  }
+}
+
+class CustomAudioBoxDialog extends StatefulWidget {
+  final Function onBoxAdded;
+
+  CustomAudioBoxDialog({required this.onBoxAdded});
+
+  @override
+  State<CustomAudioBoxDialog> createState() => _CustomAudioBoxDialogState();
+}
+
+class _CustomAudioBoxDialogState extends State<CustomAudioBoxDialog> {
+  TextEditingController textController1 = TextEditingController();
+  String? _pickedFilePath;
+  bool isRecording = false;
+  String audioFilePath = '';
+  final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
+  final FlutterSoundPlayer _player = FlutterSoundPlayer();
+  bool _isPlayerInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initRecorder();
+    _initPlayer();
+  }
+
+  Future<void> _initRecorder() async {
+    await _recorder.openAudioSession();
+    var status = await Permission.microphone.request();
+    if (status != PermissionStatus.granted) {
+      return;
+    }
+    setState(() {});
+  }
+
+  Future<void> _initPlayer() async {
+    await _player.openAudioSession();
+    setState(() => _isPlayerInitialized = true);
+  }
+
+  void startRecording() async {
+    var status = await Permission.microphone.status;
+    if (status != PermissionStatus.granted) {
+      return;
+    }
+
+    final directory = await getApplicationDocumentsDirectory();
+    final String filePath =
+        '${directory.path}/recorded_audio_${DateTime.now().millisecondsSinceEpoch}.aac';
+
+    setState(() {
+      isRecording = true;
+      audioFilePath = filePath;
+    });
+
+    await _recorder.startRecorder(toFile: filePath);
+  }
+
+  void stopRecording() async {
+    await _recorder.stopRecorder();
+    setState(() {
+      isRecording = false;
+    });
+  }
+
+  void addBox() async {
+    if (audioFilePath.isNotEmpty) {
+      try {
+        var credentials = await SecureStorage().getCredentials();
+        var username = credentials['username'];
+
+        var uri = Uri.parse('$AppConfig.serverUrl/api/upload_audio');
+        var request = http.MultipartRequest('POST', uri);
+
+        request.fields['title'] = textController1.text;
+        request.fields['username'] = username!;
+        request.files.add(await http.MultipartFile.fromPath(
+          'audio',
+          audioFilePath,
+          contentType: MediaType('audio', 'aac'),
+        ));
+
+        var response = await request.send();
+        if (response.statusCode == 200) {
+          widget.onBoxAdded();
+          if (!mounted) return;
+          Navigator.of(context).pop();
+        } else {
+          showAlert('There was an error saving that box. Please try again.');
+        }
+      } catch (e) {
+        showAlert('There was an error saving that box. Please try again.');
+      }
+    }
+  }
+
+  void showAlert(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Boxes Error'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void playAudio() async {
+    if (_pickedFilePath != null || audioFilePath.isNotEmpty) {
+      String path = _pickedFilePath ?? audioFilePath;
+      await _player.startPlayer(
+        fromURI: path,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _recorder.closeAudioSession();
+    _player.closeAudioSession();
+    textController1.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.8,
+        height: 200,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.primary,
+            width: 1.0,
+          ),
+          color: Theme.of(context).colorScheme.background,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              TextField(
+                controller: textController1,
+                decoration: InputDecoration(
+                  hintText: 'Title',
+                  hintStyle: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Roboto',
+                      fontSize: 20,
+                      fontWeight: FontWeight.normal),
+                  contentPadding: EdgeInsets.all(0),
+                  isDense: true,
+                ),
+                style: TextStyle(
+                  fontFamily: 'Roboto',
+                  fontSize: 20,
+                  color: Colors.white,
+                ),
+              ),
+              Row(
+                children: [
+                  GestureDetector(
+                    onTapDown: (_) {
+                      startRecording();
+                    },
+                    onTapUp: (_) {
+                      stopRecording();
+                    },
+                    child: Container(
+                      width: 120,
+                      height: 40,
+                      color: isRecording ? Colors.red : Colors.blue,
+                      child: Center(
+                        child: Text(
+                          isRecording ? 'Recording...' : 'Record Audio',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  if (_pickedFilePath != null || audioFilePath.isNotEmpty)
+                    ElevatedButton(
+                      onPressed: playAudio,
+                      child: Text('Play Audio'),
+                    )
+                ],
+              ),
+              ElevatedButton(
+                onPressed: addBox,
+                child: Text('Add Box'),
+              ),
+              if (_pickedFilePath != null)
+                Text('File selected: ${_pickedFilePath!.split('/').last}'),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
