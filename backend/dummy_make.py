@@ -95,4 +95,22 @@ write_tsv('match.tsv', matches)
 write_tsv('interaction.tsv', interactions)
 write_tsv('socials.tsv', socials)
 
+# then write SQL insert statements into 'data.sql' file 
 
+with open('data.sql','w') as file: 
+    LOAD = "LOAD DATA LOCAL INFILE '"
+    INTO = "' INTO TABLE "
+    LINES = " LINES TERMINATED BY '\\n';\n"
+    file.write(LOAD + 'user.tsv' + INTO + 'user' + LINES)
+    file.write(LOAD + 'box.tsv' + INTO + 'box' + LINES)
+    file.write(LOAD + 'match.tsv' + INTO + 'match' + LINES)
+    file.write(LOAD + 'interaction.tsv' + INTO + 'interaction' + LINES)
+    file.write(LOAD + 'socials.tsv' + INTO + 'socials' + LINES)
+    
+
+# then run the following command in the terminal to load the data into the database
+# mysql -u root -p -h
+# source data.sql
+    
+
+    
