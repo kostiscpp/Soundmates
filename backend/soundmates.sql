@@ -95,15 +95,15 @@ CREATE TABLE IF NOT EXISTS `soundmates`.`preference` (
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
------------------------------------------------------
--- Table `soundmates`.`sound`
------------------------------------------------------
-DROP TABLE IF EXISTS `soundmates`.`sound`;
-CREATE TABLE IF NOT EXISTS `soundmates`.`sound` (
-  `sound_id` INT NOT NULL AUTO_INCREMENT,
-  `sound_blob` BLOB NOT NULL,
-  PRIMARY KEY (`sound_id`)
-) ENGINE = InnoDB;
+-- -----------------------------------------------------
+-- -- Table `soundmates`.`sound`
+-- -----------------------------------------------------
+-- DROP TABLE IF EXISTS `soundmates`.`sound`;
+-- CREATE TABLE IF NOT EXISTS `soundmates`.`sound` (
+--   `sound_id` INT NOT NULL AUTO_INCREMENT,
+--   `sound_blob` BLOB NOT NULL,
+--   PRIMARY KEY (`sound_id`)
+-- ) ENGINE = InnoDB;
 
 
 

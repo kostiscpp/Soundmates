@@ -1846,6 +1846,212 @@ class MyInfobox extends StatelessWidget {
   }
 }
 
+class SoundInfoBox extends StatefulWidget {
+  final String title;
+  final String audioUrl;
+
+  SoundInfoBox({required this.title, required this.audioUrl});
+
+  @override
+  _SoundInfoBoxState createState() => _SoundInfoBoxState();
+}
+
+class _SoundInfoBoxState extends State<SoundInfoBox> {
+  final FlutterSoundPlayer _audioPlayer = FlutterSoundPlayer();
+
+  bool _isPlaying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _audioPlayer.openAudioSession();
+  }
+
+  void _togglePlay() async {
+    if (_audioPlayer.isPlaying) {
+      await _audioPlayer.stopPlayer();
+      setState(() => _isPlaying = false);
+    } else {
+      await _audioPlayer.startPlayer(
+        fromURI: widget.audioUrl,
+        whenFinished: () {
+          setState(() => _isPlaying = false);
+        },
+      );
+      setState(() => _isPlaying = true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.closeAudioSession();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
+      child: Container(
+        decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: Theme.of(context).colorScheme.surface),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(10, 5, 10, 10),
+          child: Column(
+            children: [
+              Container(
+                width: MediaQuery.of(context).size.width,
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.white,
+                      width: 1.0,
+                    ),
+                  ),
+                ),
+                child: Text(widget.title,
+                    style: TextStyle(
+                      fontFamily: 'Roboto',
+                      fontSize: 20,
+                      color: Colors.white,
+                    )),
+              ),
+              IconButton(
+                icon: Icon(
+                  _isPlaying ? Icons.pause : Icons.play_arrow,
+                  color: Colors.white,
+                ),
+                onPressed: _togglePlay,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+
+
+class MySoundInfobox extends StatefulWidget {
+  final String title;
+  final String audioUrl;
+  final VoidCallback onDelete;
+
+  MySoundInfobox({required this.title, required this.audioUrl, required this.onDelete});
+
+  @override
+  _MySoundInfoboxState createState() => _MySoundInfoboxState();
+}
+
+class _MySoundInfoboxState extends State<MySoundInfobox> {
+  late FlutterSoundPlayer _audioPlayer;
+  bool _isPlaying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _audioPlayer = FlutterSoundPlayer();
+    _initializePlayer();
+  }
+
+  Future<void> _initializePlayer() async {
+    await _audioPlayer.openAudioSession();
+  }
+
+  void _togglePlay() async {
+    if (_audioPlayer.isPlaying) {
+      await _audioPlayer.stopPlayer();
+      setState(() => _isPlaying = false);
+    } else {
+      await _audioPlayer.startPlayer(
+        fromURI: widget.audioUrl,
+        whenFinished: () {
+          setState(() => _isPlaying = false);
+        },
+      );
+      setState(() => _isPlaying = true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.closeAudioSession();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
+      child: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              color: Theme.of(context).colorScheme.surface),
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(10, 5, 10, 10),
+              child: Column(
+                children: [
+                  Container(
+                      width: MediaQuery.of(context).size.width,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: Colors.white,
+                            width: 1.0,
+                          ),
+                        ),
+                      ),
+                      child: Text(widget.title,
+                          style: TextStyle(
+                            fontFamily: 'Roboto',
+                            fontSize: 20,
+                            color: Colors.white,
+                          ))),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          _isPlaying ? Icons.pause : Icons.play_arrow,
+                          color: Colors.white,
+                        ),
+                        onPressed: _togglePlay,
+                      ),
+                      Expanded(
+                        child: Text(
+                          'Tap to play message',
+                          style: TextStyle(
+                            fontFamily: 'Roboto',
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            right: 0,
+            top: 0,
+            child: IconButton(
+              icon: Icon(Icons.close, color: Colors.white),
+              onPressed: widget.onDelete,
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+
 class MoreInfoPage extends StatefulWidget {
   final Profile profile;
 
