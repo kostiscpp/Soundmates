@@ -3913,17 +3913,17 @@ class _CustomAudioBoxDialogState extends State<CustomAudioBoxDialog> {
         var credentials = await SecureStorage().getCredentials();
         var username = credentials['username'];
 
-        var uri = Uri.parse('$AppConfig.serverUrl/api/upload_audio');
+        var uri = Uri.parse('${AppConfig.serverUrl}/api/upload_audio');
         var request = http.MultipartRequest('POST', uri);
-
         request.fields['title'] = textController1.text;
         request.fields['username'] = username!;
+        print("yes");
         request.files.add(await http.MultipartFile.fromPath(
           'audio',
           audioFilePath,
           contentType: MediaType('audio', 'aac'),
         ));
-
+        print("no");
         var response = await request.send();
         if (response.statusCode == 200) {
           widget.onBoxAdded();
@@ -3931,8 +3931,10 @@ class _CustomAudioBoxDialogState extends State<CustomAudioBoxDialog> {
           Navigator.of(context).pop();
         } else {
           showAlert('There was an error saving that box. Please try again.');
+          print(response.statusCode);
         }
       } catch (e) {
+        print(e);
         showAlert('There was an error saving that box. Please try again.');
       }
     }

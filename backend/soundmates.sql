@@ -117,17 +117,11 @@ CREATE TABLE IF NOT EXISTS `soundmates`.`box` (
   `title` TEXT NOT NULL,
   `description` TEXT NOT NULL,
   `is_text` TINYINT(1) NOT NULL DEFAULT 1,
-  `sound_id` INT NULL,
   PRIMARY KEY (`user_id`, `order`),
   INDEX `fk_box_user1_idx` (`user_id` ASC) VISIBLE,
   CONSTRAINT `fk_box_user1`
     FOREIGN KEY (`user_id`)
     REFERENCES `soundmates`.`user` (`user_id`)
-    ON DELETE RESTRICT
-    ON UPDATE CASCADE,
-  CONSTRAINT `fk_box_sound1`
-    FOREIGN KEY (`sound_id`) 
-    REFERENCES soundmates.sound (`sound_id`)
     ON DELETE RESTRICT
     ON UPDATE CASCADE
 ) ENGINE = InnoDB;

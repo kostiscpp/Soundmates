@@ -596,7 +596,7 @@ def add_box():
         return jsonify({'message': 'Box added successfully'}), 200
     else:
         cur.close()
-        return jsonify({'message': 'User not found'}), 404
+        return jsonify({'message': 'User not found'}), 400
 
 #update location endpoint 
 @app.route('/api/update_location', methods=['POST'])
@@ -725,7 +725,7 @@ def get_infoboxes():
     try:
         # Fetching boxes information for the user
         cur.execute("""
-            SELECT title, description 
+            SELECT title, description, is_text 
             FROM box 
             WHERE user_id = (SELECT user_id FROM user WHERE username = %s)
         """, (username,))
@@ -733,54 +733,72 @@ def get_infoboxes():
         if not boxes:
             return jsonify([]), 200
         # Formatting the fetched data
-        box_data = [{'title': box[0], 'content': box[1]} for box in boxes]
+        box_data = [{'title': box[0], 'content': box[1], 'isText': box[2]} for box in boxes]
         return jsonify(box_data)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
 
-# UPLOAD_FOLDER = './sounds/'
-# ALLOWED_EXTENSIONS = {'wav', 'mp3', 'ogg'}  # Add or remove file types as needed
+UPLOAD_FOLDER = './audio/'
+ALLOWED_EXTENSIONS = {'aac'}  # Add or remove file types as needed
 
-# app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# def allowed_file(filename):
-#     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-# #endpoint to get the sound 
-# @app.route('/sounds/<filename>',methods=['GET'])
-# def serve_sound(filename):
-#     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+#endpoint to get the sound 
+@app.route('/audio/<filename>',methods=['GET'])
+def serve_audio(filename):
+    print(filename)
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-# #endpoint to upload sound 
-# @app.route('/api/upload_sound',methods=['POST'])
-# def upload_sound(): #endpoint to get the sound
-#     if 'sound' not in request.files:
-#         return jsonify({'message': 'No sound file provided'}), 400
-#     file = request.files['sound']
-#     if file.filename == '':
-#         return jsonify({'message': 'No selected file'}), 400
-#     if file and allowed_file(file.filename):
-#         filename = secure_filename(file.filename)
-#         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-#         file.save(file_path)
-
-#         #Save the file URL to the database 
-#          # Save the file URL to the database
-        
-#         file_url = server + f'/sounds/{filename}'  #adjust if needed 
-#         cur = mysql.connection.cursor()
-#         cur.execute("INSERT INTO sound (sound_url) VALUES (%s)", (file_url,))
-#         mysql.connection.commit()
-#         cur.close()
-
-#         return jsonify({'message': 'File uploaded successfully','url':file_url}), 200
-#     else:
-#         return jsonify({'message': 'Invalid file format'}), 400
+#endpoint to upload sound 
+@app.route('/api/upload_audio',methods=['POST'])
+def upload_audio(): 
+    print(request.form)
+    data = request.form
+    title = data.get('title')
+    username = data.get('username')
+    print(17)
+    if not all([title, username]):
+        return jsonify({'message': 'Title and username are required'}), 400
+    if 'audio' not in request.files:
+        return jsonify({'message': 'No sound file provided'}), 400
+    file = request.files['audio']
+    if file.filename == '':
+        return jsonify({'message': 'No selected file'}), 400
     
-# @app.route('/sounds/<filename>',methods=['GET'])
-# def serve_sound(filename):
-#     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    file_url = server +'/audio/'  #adjust if needed 
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT user_id FROM user WHERE username = %s", (username,))
+    user_id_result = cur.fetchone()
+    print(42)
+    if user_id_result:
+        user_id = user_id_result[0]
+        if file and allowed_file(file.filename):
+            datee = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            filename = username + str(datee) + '.aac'
+            file_url += filename
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+            #Save the file URL to the database 
+            # Save the file URL to the database
+            cur.execute("SELECT * FROM box WHERE user_id = %s", (user_id,))
+            next_order = 1
+            if cur.rowcount != 0:
+                cur.execute("SELECT MAX(`order`) FROM box WHERE user_id = %s", (user_id,))
+                max_order_result = cur.fetchone()[0]
+                next_order = max_order_result + 1 
+            cur.execute("INSERT INTO box (user_id, title, description,`order`, `is_text`) VALUES (%s, %s, %s, %s, 0)", (user_id, title, file_url, next_order))
+            mysql.connection.commit()
+            cur.close()
+            return jsonify({'message': 'Box added successfully'}), 200
+        else:
+            return jsonify({'message': 'Invalid file format'}), 400
+    else:
+        cur.close()
+        return jsonify({'message': 'User not found'}), 400
     
 #endpoint to delete box
 @app.route('/api/delete_box', methods=['POST'])
@@ -789,13 +807,18 @@ def delete_box():
     username = data.get('username')
     title = data.get('title')
     content = data.get('content')
-
+    is_text = 1
     if not all([username, title, content]):
         return jsonify({'message': 'Username, title, and content are required'}), 400
 
     cur = mysql.connection.cursor()
     try:
         # Assuming 'box' table has columns 'title', 'description', and is related to 'user'
+        cur.execute("""SELECT is_text FROM box WHERE user_id = (SELECT user_id FROM user WHERE username = %s) AND title = %s AND description = %s""", (username, title, content))
+        if cur.rowcount == 0:
+            return jsonify({'message': 'Box not found'}), 400
+        # Delete the box
+        is_text = cur.fetchone()[0]
         cur.execute("""
             DELETE FROM box 
             WHERE user_id = (SELECT user_id FROM user WHERE username = %s)
@@ -803,11 +826,16 @@ def delete_box():
             AND description = %s
         """, (username, title, content))
         mysql.connection.commit()
+
         return jsonify({'message': 'Box deleted successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
+        if is_text == 0:
+            content = content.replace(server+'/audio/', '')
+            delete_path = os.path.join(app.config['UPLOAD_FOLDER'], content)
+            os.remove(delete_path)
 
 
 
