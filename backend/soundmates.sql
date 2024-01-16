@@ -53,8 +53,8 @@ CREATE TABLE IF NOT EXISTS `soundmates`.`photo` (
   CONSTRAINT `fk_photo_user`
     FOREIGN KEY (`user_id`)
     REFERENCES `soundmates`.`user` (`user_id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE RESTRICT
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS `soundmates`.`preference` (
   CONSTRAINT `fk_user_has_genre_genre1`
     FOREIGN KEY (`genre_genre_id`)
     REFERENCES `soundmates`.`genre` (`genre_id`)
-    ON DELETE RESRICT
+    ON DELETE RESTRICT
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
@@ -143,12 +143,12 @@ CREATE TABLE IF NOT EXISTS `soundmates`.`Match` (
   CONSTRAINT `fk_user_has_user_user1`
     FOREIGN KEY (`user1_id`)
     REFERENCES `soundmates`.`user` (`user_id`)
-    ON DELETE RESRICT
+    ON DELETE RESTRICT
     ON UPDATE CASCADE,
   CONSTRAINT `fk_user_has_user_user2`
     FOREIGN KEY (`user2_id`)
     REFERENCES `soundmates`.`user` (`user_id`)
-    ON DELETE RESRICT
+    ON DELETE RESTRICT
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
 

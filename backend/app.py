@@ -1,4 +1,4 @@
-from flask import Flask,request, jsonify, send_from_directory
+from flask import Flask,request, jsonify, send_from_directory, send_file
 from flask_mysqldb import MySQL
 from werkzeug.security import generate_password_hash, check_password_hash
 import yaml
@@ -141,7 +141,7 @@ def profile_swipe(profile):
     result["distance"] = str(round(profile[-1],1)) + "km"
     result["job"] = "" if profile[4] is None else profile[4]
     result["photoUrls"] = [server_image + x[2] for x in photos]
-    result["boxes"] = [(x[2],x[3]) for x in box]
+    result["boxes"] = [(x[2],x[3],int(x[4])) for x in box] 
     return result
   
 @app.route('/login', methods=['POST'])
@@ -752,6 +752,17 @@ def allowed_file(filename):
 def serve_audio(filename):
     print(filename)
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/get_audio', methods=['GET'])
+def get_audio():
+    url = request.args.get('url')
+    if not url:
+        return jsonify({'message': 'Null url'}), 400
+    url = url.replace(server+'/audio/', '')
+    try:
+        return send_file(f'./audio/{url}', as_attachment=True)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 #endpoint to upload sound 
 @app.route('/api/upload_audio',methods=['POST'])
