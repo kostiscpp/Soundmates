@@ -14,6 +14,7 @@ import 'package:flutter_sound/flutter_sound.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http_parser/http_parser.dart';
+import 'dart:io';
 
 class SecureStorage {
   final _storage = FlutterSecureStorage();
@@ -521,7 +522,7 @@ class _MatchesPageState extends State<MatchesPage> {
                   )),
             )),
         for (var match in matches)
-          if (match['new'] >= 0)
+          if (match['new'] >= 1)
             NewMatchBox(
               name: match['name'],
               age: match['age'],
@@ -1881,39 +1882,83 @@ class MyAudioInfobox extends StatefulWidget {
   final String content;
   final VoidCallback onDelete;
 
-  MyAudioInfobox({required this.title, required this.content, required this.onDelete});
+  MyAudioInfobox(
+      {required this.title, required this.content, required this.onDelete});
 
   @override
-  _MyAudioInfoboxState createState() => _MyAudioInfoboxState();
+  State<MyAudioInfobox> createState() => _MyAudioInfoboxState();
 }
 
 class _MyAudioInfoboxState extends State<MyAudioInfobox> {
-  late FlutterSoundPlayer _audioPlayer;
+  final FlutterSoundPlayer _audioPlayer = FlutterSoundPlayer();
   bool _isPlaying = false;
+  String? _localFilePath;
 
   @override
   void initState() {
     super.initState();
-    _audioPlayer = FlutterSoundPlayer();
     _initializePlayer();
+    _downloadAndStoreFile(widget.content);
+  }
+
+  Future<void> _downloadAndStoreFile(String url) async {
+    try {
+      Uri uri = Uri.parse(url);
+      List<String> segments = uri.pathSegments;
+      String lastseg = segments.last;
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File('${tempDir.path}/$lastseg');
+      final response = await http.get(
+          Uri.parse('${AppConfig.serverUrl}/get_audio')
+              .replace(queryParameters: {
+        'url': url,
+      }));
+
+      if (response.statusCode == 200) {
+        await tempFile.writeAsBytes(response.bodyBytes);
+        setState(() {
+          _localFilePath = tempFile.path;
+        });
+      } else {
+        print('error downloading file');
+      }
+    } catch (e) {
+      print('error downloading file');
+    }
   }
 
   Future<void> _initializePlayer() async {
-    await _audioPlayer.openAudioSession();
+    try {
+      await _audioPlayer.openAudioSession();
+      setState(() {
+        _isPlaying = false;
+      });
+      print('player initialized');
+    } catch (e) {
+      print('error in initializing player');
+      print(e);
+    }
   }
 
   void _togglePlay() async {
-    if (_audioPlayer.isPlaying) {
-      await _audioPlayer.stopPlayer();
-      setState(() => _isPlaying = false);
-    } else {
-      await _audioPlayer.startPlayer(
-        fromURI: widget.content,
-        whenFinished: () {
+    if (_localFilePath != null) {
+      try {
+        if (_isPlaying) {
+          await _audioPlayer.stopPlayer();
           setState(() => _isPlaying = false);
-        },
-      );
-      setState(() => _isPlaying = true);
+        } else {
+          await _audioPlayer.startPlayer(
+            fromURI: _localFilePath,
+            codec: Codec.aacMP4,
+            whenFinished: () {
+              setState(() => _isPlaying = false);
+            },
+          );
+          setState(() => _isPlaying = true);
+        }
+      } catch (e) {
+        print(e);
+      }
     }
   }
 
@@ -1931,8 +1976,8 @@ class _MyAudioInfoboxState extends State<MyAudioInfobox> {
         children: [
           Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: Theme.of(context).colorScheme.surface),
+                borderRadius: BorderRadius.circular(10),
+                color: Theme.of(context).colorScheme.surface),
             child: Padding(
               padding: EdgeInsets.fromLTRB(10, 5, 10, 10),
               child: Column(
@@ -1957,12 +2002,11 @@ class _MyAudioInfoboxState extends State<MyAudioInfobox> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
-                        icon: Icon(
-                          _isPlaying ? Icons.pause : Icons.play_arrow,
-                          color: Colors.white,
-                        ),
-                        onPressed: _togglePlay,
-                      ),
+                          icon: Icon(
+                            _isPlaying ? Icons.pause : Icons.play_arrow,
+                            color: Colors.white,
+                          ),
+                          onPressed: () => _togglePlay()),
                       Expanded(
                         child: Text(
                           'Tap to play message',
@@ -1993,7 +2037,6 @@ class _MyAudioInfoboxState extends State<MyAudioInfobox> {
   }
 }
 
-
 class AudioInfoBox extends StatefulWidget {
   final String title;
   final String content;
@@ -2001,32 +2044,82 @@ class AudioInfoBox extends StatefulWidget {
   AudioInfoBox({required this.title, required this.content});
 
   @override
-  _AudioInfoBoxState createState() => _AudioInfoBoxState();
+  State<AudioInfoBox> createState() => _AudioInfoBoxState();
 }
 
 class _AudioInfoBoxState extends State<AudioInfoBox> {
   final FlutterSoundPlayer _audioPlayer = FlutterSoundPlayer();
 
   bool _isPlaying = false;
+  String? _localFilePath;
 
   @override
   void initState() {
     super.initState();
-    _audioPlayer.openAudioSession();
+    _initializePlayer();
+    _downloadAndStoreFile(widget.content);
+  }
+
+  Future<void> _downloadAndStoreFile(String url) async {
+    print(url);
+
+    try {
+      Uri uri = Uri.parse(url);
+      List<String> segments = uri.pathSegments;
+      String lastseg = segments.last;
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File('${tempDir.path}/$lastseg');
+      final response = await http.get(
+          Uri.parse('${AppConfig.serverUrl}/get_audio')
+              .replace(queryParameters: {
+        'url': url,
+      }));
+
+      if (response.statusCode == 200) {
+        await tempFile.writeAsBytes(response.bodyBytes);
+        setState(() {
+          _localFilePath = tempFile.path;
+        });
+      } else {
+        print('error downloading file');
+      }
+    } catch (e) {
+      print('error downloading file');
+    }
+  }
+
+  Future<void> _initializePlayer() async {
+    try {
+      await _audioPlayer.openAudioSession();
+      setState(() {
+        _isPlaying = false;
+      });
+      print('player initialized');
+    } catch (e) {
+      print('error in initializing player');
+      print(e);
+    }
   }
 
   void _togglePlay() async {
-    if (_audioPlayer.isPlaying) {
-      await _audioPlayer.stopPlayer();
-      setState(() => _isPlaying = false);
-    } else {
-      await _audioPlayer.startPlayer(
-        fromURI: widget.content,
-        whenFinished: () {
+    if (_localFilePath != null) {
+      try {
+        if (_isPlaying) {
+          await _audioPlayer.stopPlayer();
           setState(() => _isPlaying = false);
-        },
-      );
-      setState(() => _isPlaying = true);
+        } else {
+          await _audioPlayer.startPlayer(
+            fromURI: _localFilePath,
+            codec: Codec.aacMP4,
+            whenFinished: () {
+              setState(() => _isPlaying = false);
+            },
+          );
+          setState(() => _isPlaying = true);
+        }
+      } catch (e) {
+        print(e);
+      }
     }
   }
 
@@ -2079,8 +2172,6 @@ class _AudioInfoBoxState extends State<AudioInfoBox> {
     );
   }
 }
-
-
 
 class MoreInfoPage extends StatefulWidget {
   final Profile profile;
@@ -2168,9 +2259,11 @@ class _MoreInfoPageState extends State<MoreInfoPage> {
         ]),
       ),
       Column(
-        children: widget.profile.boxes
-            .map<Widget>((pair) {return pair.third ==1 ? Infobox(title: pair.first, content: pair.second): AudioInfoBox(title: pair.first, content: pair.second);})
-            .toList(),
+        children: widget.profile.boxes.map<Widget>((pair) {
+          return pair.third == 1
+              ? Infobox(title: pair.first, content: pair.second)
+              : AudioInfoBox(title: pair.first, content: pair.second);
+        }).toList(),
       ),
     ])));
   }
