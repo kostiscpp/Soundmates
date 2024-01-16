@@ -819,21 +819,35 @@ class AppBarWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 20, 0, 5),
+      padding: const EdgeInsets.fromLTRB(0, 25, 0, 5),
       child: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.background,
         ),
         //backgroundColor: Theme.of(context).colorScheme.background,
-        child: Center(
-          child: Text('Soundmates',
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          SizedBox(
+              height: 33,
+              width: 33,
+              child: Align(
+                  alignment: Alignment.center,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      // Rounded corners
+                      image: DecorationImage(
+                        image: AssetImage('assets/icons/icon.png'),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ))),
+          Text('Soundmates',
               style: TextStyle(
                 fontFamily: 'Basic',
-                fontSize: 30,
+                fontSize: 33,
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).colorScheme.primary,
               )),
-        ),
+        ]),
       ),
     );
   }
@@ -2407,26 +2421,73 @@ class IndexPage extends StatelessWidget {
       ),
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ElevatedButton(
-              onPressed: () {
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 100, 0, 10),
+              child: SizedBox(
+                height: 150,
+                width: 150,
+                child: Align(
+                  alignment: Alignment.center,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage('assets/icons/icon.png'),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => SignUpPage()),
                 );
               },
-              child: Text('Sign Up'),
+              child: Container(
+                height: 50,
+                width: 250,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                child: Center(
+                    child: Text(
+                  'Sign Up',
+                  style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold),
+                )),
+              ),
             ),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
+            GestureDetector(
+              onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => LoginPage()),
                 );
               },
-              child: Text('Login'),
+              child: Container(
+                height: 50,
+                width: 250,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                child: Center(
+                    child: Text(
+                  'Login',
+                  style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold),
+                )),
+              ),
             ),
           ],
         ),
@@ -4076,7 +4137,7 @@ class _CustomAudioBoxDialogState extends State<CustomAudioBoxDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         width: MediaQuery.of(context).size.width * 0.8,
-        height: 200,
+        height: 180,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
@@ -4086,7 +4147,7 @@ class _CustomAudioBoxDialogState extends State<CustomAudioBoxDialog> {
           color: Theme.of(context).colorScheme.background,
         ),
         child: Padding(
-          padding: const EdgeInsets.all(10.0),
+          padding: const EdgeInsets.fromLTRB(10.0, 5, 10, 5),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -4108,41 +4169,64 @@ class _CustomAudioBoxDialogState extends State<CustomAudioBoxDialog> {
                   color: Colors.white,
                 ),
               ),
-              Row(
-                children: [
-                  GestureDetector(
-                    onTapDown: (_) {
-                      startRecording();
-                    },
-                    onTapUp: (_) {
-                      stopRecording();
-                    },
-                    child: Container(
-                      width: 120,
-                      height: 40,
-                      color: isRecording ? Colors.red : Colors.blue,
-                      child: Center(
-                        child: Text(
-                          isRecording ? 'Recording...' : 'Record Audio',
-                          style: TextStyle(color: Colors.white),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    GestureDetector(
+                      onTapDown: (_) {
+                        startRecording();
+                      },
+                      onTapUp: (_) {
+                        stopRecording();
+                      },
+                      child: Container(
+                        width: 120,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          color: isRecording
+                              ? Theme.of(context).colorScheme.tertiary
+                              : Theme.of(context).colorScheme.secondary,
+                        ),
+                        child: Center(
+                          child: Text(
+                            isRecording ? 'Recording...' : 'Record Audio',
+                            style: TextStyle(color: Colors.white),
+                          ),
                         ),
                       ),
                     ),
+                    SizedBox(width: 10),
+                    if (_pickedFilePath != null || audioFilePath.isNotEmpty)
+                      GestureDetector(
+                        onTap: playAudio,
+                        child: Container(
+                          width: 120,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: Theme.of(context).colorScheme.secondary,
+                          ),
+                          child: Center(child: Text('Play Audio')),
+                        ),
+                      )
+                  ],
+                ),
+              ),
+              GestureDetector(
+                onTap: addBox,
+                child: Container(
+                  width: 120,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: Theme.of(context).colorScheme.primary,
                   ),
-                  SizedBox(width: 10),
-                  if (_pickedFilePath != null || audioFilePath.isNotEmpty)
-                    ElevatedButton(
-                      onPressed: playAudio,
-                      child: Text('Play Audio'),
-                    )
-                ],
+                  child: Center(child: Text('Add Box')),
+                ),
               ),
-              ElevatedButton(
-                onPressed: addBox,
-                child: Text('Add Box'),
-              ),
-              if (_pickedFilePath != null)
-                Text('File selected: ${_pickedFilePath!.split('/').last}'),
             ],
           ),
         ),
