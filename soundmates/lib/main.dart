@@ -755,8 +755,13 @@ class _ProfilePageState extends State<ProfilePage> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Center(
-                          child: Text('Manage Socials',
-                              style: TextStyle(color: Colors.white)),
+                          child: Text(
+                            'Manage Socials',
+                            style: TextStyle(color: Colors.white),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
                     ),
@@ -780,8 +785,13 @@ class _ProfilePageState extends State<ProfilePage> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Center(
-                          child: Text('Change Genres',
-                              style: TextStyle(color: Colors.white)),
+                          child: Text(
+                            'Change Genres',
+                            style: TextStyle(color: Colors.white),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
                     ),
@@ -991,7 +1001,7 @@ class _PhotoWidgetState extends State<PhotoWidget> {
         ),
 
         Positioned(
-          top: 10,
+          top: MediaQuery.of(context).size.height * 0.015,
           left: 0,
           right: 0,
           child: PhotoIndicator(
@@ -1028,8 +1038,9 @@ class _PhotoWidgetState extends State<PhotoWidget> {
         ),
 
         Positioned(
-          left: 10,
-          top: 480, // Change alignment to top center
+          left: MediaQuery.of(context).size.width * 0.02,
+          top: MediaQuery.of(context).size.height *
+              0.59, // Change alignment to top center
           child: Text(
             '${profile.name} ${profile.age}',
             style: TextStyle(
@@ -1040,8 +1051,9 @@ class _PhotoWidgetState extends State<PhotoWidget> {
           ),
         ),
         Positioned(
-            left: 10,
-            top: 530,
+            left: MediaQuery.of(context).size.width * 0.03,
+            top: MediaQuery.of(context).size.height *
+                0.648, // Change alignment to top center
             child: Text(
               profile.distance,
               style: TextStyle(
@@ -1051,7 +1063,7 @@ class _PhotoWidgetState extends State<PhotoWidget> {
               ),
             )),
         Positioned(
-          bottom: 10,
+          bottom: MediaQuery.of(context).size.height * 0.01,
           left: 0,
           right: 0,
           child: Container(
@@ -1129,8 +1141,8 @@ class _PhotoWidgetState extends State<PhotoWidget> {
         ),
 
         Positioned(
-          right: 30,
-          top: 480,
+          right: MediaQuery.of(context).size.width * 0.08,
+          top: MediaQuery.of(context).size.height * 0.60,
           child: SizedBox(
             width: 50,
             height: 50,
@@ -2350,7 +2362,7 @@ class TipBox extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             color: Theme.of(context).colorScheme.tertiary),
         child: Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(8),
           child: Column(
             children: [
               Text(
@@ -2370,6 +2382,7 @@ class TipBox extends StatelessWidget {
                   fontWeight: FontWeight.normal,
                   color: Colors.black,
                 ),
+                textAlign: TextAlign.justify,
               )
             ],
           ),
@@ -2745,89 +2758,91 @@ class _LoginPageState extends State<LoginPage> {
         title: Text('Login'),
         backgroundColor: Theme.of(context).colorScheme.primary,
       ),
-      body: Container(
-        margin:
-            EdgeInsets.symmetric(horizontal: 20), // Add left and right margins
-        child: Column(
-          mainAxisAlignment:
-              MainAxisAlignment.start, // Align content to the top
-          children: [
-            SizedBox(
-              height: 100,
-              width: MediaQuery.of(context).size.width,
-            ),
-            SizedBox(
+      body: SingleChildScrollView(
+        child: Container(
+          margin: EdgeInsets.symmetric(
+              horizontal: 20), // Add left and right margins
+          child: Column(
+            mainAxisAlignment:
+                MainAxisAlignment.start, // Align content to the top
+            children: [
+              SizedBox(
                 height: 100,
                 width: MediaQuery.of(context).size.width,
-                child: Align(
-                  alignment: Alignment.center,
-                  child: Text('Soundmates',
-                      style: TextStyle(
-                        fontFamily: 'Basic',
-                        fontSize: 30,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      )),
-                )),
-            SizedBox(
-                height:
-                    20), // Increase the space between the title and the text fields
-            TextField(
-              controller: usernameController,
-              decoration: InputDecoration(
-                hintText: 'Username',
               ),
-            ),
-            SizedBox(height: 10),
-            TextField(
-              controller: passwordController,
-              decoration: InputDecoration(
-                hintText: 'Password',
+              SizedBox(
+                  height: 100,
+                  width: MediaQuery.of(context).size.width,
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: Text('Soundmates',
+                        style: TextStyle(
+                          fontFamily: 'Basic',
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        )),
+                  )),
+              SizedBox(
+                  height:
+                      20), // Increase the space between the title and the text fields
+              TextField(
+                controller: usernameController,
+                decoration: InputDecoration(
+                  hintText: 'Username',
+                ),
               ),
-              obscureText: true,
-            ),
-            SizedBox(height: 50),
-            ElevatedButton(
-              onPressed: () async {
-                final currentContext = context;
+              SizedBox(height: 10),
+              TextField(
+                controller: passwordController,
+                decoration: InputDecoration(
+                  hintText: 'Password',
+                ),
+                obscureText: true,
+              ),
+              SizedBox(height: 50),
+              ElevatedButton(
+                onPressed: () async {
+                  final currentContext = context;
 
-                String? result = await sendDataToServer();
+                  String? result = await sendDataToServer();
 
-                if (result == null) {
-                  if (!mounted) return;
+                  if (result == null) {
+                    if (!mounted) return;
 
-                  Navigator.pushReplacement(
-                    currentContext,
-                    MaterialPageRoute(
-                      builder: (context) => MyHomePage(),
-                    ),
-                  );
-                } else {
-                  if (!mounted) return;
+                    Navigator.pushReplacement(
+                      currentContext,
+                      MaterialPageRoute(
+                        builder: (context) => MyHomePage(),
+                      ),
+                    );
+                  } else {
+                    if (!mounted) return;
 
-                  // Show an alert dialog
-                  showDialog(
-                    context: currentContext,
-                    builder: (context) {
-                      return AlertDialog(
-                        title: Text('Error'),
-                        content: Text(result),
-                        actions: <Widget>[
-                          TextButton(
-                            child: Text('OK'),
-                            onPressed: () {
-                              Navigator.of(context).pop(); // Close the dialog
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                }
-              },
-              child: Text('Login'),
-            ),
-          ],
+                    // Show an alert dialog
+                    showDialog(
+                      context: currentContext,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: Text('Error'),
+                          content: Text(result),
+                          actions: <Widget>[
+                            TextButton(
+                              child: Text('OK'),
+                              onPressed: () {
+                                Navigator.of(context).pop(); // Close the dialog
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  }
+                },
+                child: Text('Login'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -3128,42 +3143,78 @@ class _GenreSelectState extends State<GenreSelect> {
       appBar: AppBar(
         title: Text("Genre Selector"),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Column(
-              children: [
-                Center(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Colors.white,
-                    ),
-                    width: MediaQuery.of(context).size.width * 0.9,
-                    child: SingleChildScrollView(
-                      child: TypeAheadField<String>(
-                        textFieldConfiguration: TextFieldConfiguration(
-                          autofocus: false,
-                          style: TextStyle(color: Colors.black),
-                          decoration: InputDecoration(
-                            hintText: 'Search Genre',
-                            prefixIcon: Icon(Icons.search),
-                            filled: true,
-                            fillColor: Colors.white,
-                            hintStyle: TextStyle(color: Colors.grey),
-                          ),
+          Column(
+            children: [
+              Padding(
+                padding:
+                    EdgeInsets.all(MediaQuery.of(context).size.height * 0.01),
+                child: Column(
+                  children: [
+                    Center(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.white,
                         ),
-                        suggestionsCallback: (pattern) {
-                          return genres.where((genre) {
-                            return genre
-                                .toLowerCase()
-                                .contains(pattern.toLowerCase());
-                          }).toList();
-                        },
-                        itemBuilder: (context, suggestion) {
-                          return GestureDetector(
-                            onTap: () {
+                        width: MediaQuery.of(context).size.width * 0.9,
+                        child: SingleChildScrollView(
+                          child: TypeAheadField<String>(
+                            textFieldConfiguration: TextFieldConfiguration(
+                              autofocus: false,
+                              style: TextStyle(color: Colors.black),
+                              decoration: InputDecoration(
+                                hintText: 'Search Genre',
+                                prefixIcon: Icon(Icons.search),
+                                filled: true,
+                                fillColor: Colors.white,
+                                hintStyle: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                            suggestionsCallback: (pattern) {
+                              return genres.where((genre) {
+                                return genre
+                                    .toLowerCase()
+                                    .contains(pattern.toLowerCase());
+                              }).toList();
+                            },
+                            itemBuilder: (context, suggestion) {
+                              return GestureDetector(
+                                onTap: () {
+                                  // Handle suggestion selection here
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return CustomGenreAlert(
+                                        genre: suggestion,
+                                        onSelection: _addGenre,
+                                      );
+                                    },
+                                  );
+                                },
+                                child: Container(
+                                  color:
+                                      Colors.white, // Set the background color
+                                  child: ListTile(
+                                    title: Text(
+                                      suggestion,
+                                      style: TextStyle(
+                                        color:
+                                            Colors.black, // Set the text color
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            noItemsFoundBuilder: (context) => Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 8.0),
+                              child: Text('No Genres Found',
+                                  textAlign: TextAlign.center),
+                            ),
+                            onSuggestionSelected: (suggestion) {
                               // Handle suggestion selection here
                               showDialog(
                                 context: context,
@@ -3175,60 +3226,34 @@ class _GenreSelectState extends State<GenreSelect> {
                                 },
                               );
                             },
-                            child: Container(
-                              color: Colors.white, // Set the background color
-                              child: ListTile(
-                                title: Text(
-                                  suggestion,
-                                  style: TextStyle(
-                                    color: Colors.black, // Set the text color
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                        noItemsFoundBuilder: (context) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Text('No Genres Found',
-                              textAlign: TextAlign.center),
+                          ),
                         ),
-                        onSuggestionSelected: (suggestion) {
-                          // Handle suggestion selection here
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return CustomGenreAlert(
-                                genre: suggestion,
-                                onSelection: _addGenre,
-                              );
-                            },
-                          );
-                        },
                       ),
                     ),
-                  ),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.72,
+                      child: SingleChildScrollView(
+                          child: Column(
+                        children: selectedGenres.entries.map((entry) {
+                          return GenreBox(
+                            genre: entry.key,
+                            percentage: entry.value,
+                            onSelection: _addGenre,
+                            onDeletion: _removeGenre,
+                          );
+                        }).toList(),
+                      )),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 16),
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.72,
-                  child: SingleChildScrollView(
-                      child: Column(
-                    children: selectedGenres.entries.map((entry) {
-                      return GenreBox(
-                        genre: entry.key,
-                        percentage: entry.value,
-                        onSelection: _addGenre,
-                        onDeletion: _removeGenre,
-                      );
-                    }).toList(),
-                  )),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(0, 0, 0, 8.0),
+          Positioned(
+            left: MediaQuery.of(context).size.width * 0.15,
+            right: MediaQuery.of(context).size.width * 0.15,
+            bottom: MediaQuery.of(context).size.height * 0.01,
             child: GestureDetector(
               onTap: () async {
                 var serverres = await sendDataToServer(selectedGenres);
@@ -3241,7 +3266,7 @@ class _GenreSelectState extends State<GenreSelect> {
                 } else {}
               },
               child: Container(
-                height: 50,
+                height: MediaQuery.of(context).size.height * 0.06,
                 width: MediaQuery.of(context).size.width * 0.7,
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.secondary,
@@ -3511,88 +3536,81 @@ class _CustomSocialDialogState extends State<CustomSocialDialog> {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       backgroundColor: Colors.transparent,
-      child: Container(
-        height: 350,
-        width: MediaQuery.of(context).size.width * 0.8,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          children: [
-            TipBox(
-                tip:
-                    'This is where your Matches will reach you. If you change your mind you can always change it later!'),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.primary,
-                    width: 1.0,
-                  ),
-                  color: Theme.of(context).colorScheme.background,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TipBox(
+              tip:
+                  'This is where your Matches will reach you. If you change your mind you can always change it later!'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 1.0,
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 4, // 30% of space
-                        child: Container(
-                          height: 150,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            image: DecorationImage(
-                              image: NetworkImage(photoUrl),
-                              fit: BoxFit.cover,
-                            ),
+                color: Theme.of(context).colorScheme.background,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 4, // 30% of space
+                      child: Container(
+                        height: 150,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          image: DecorationImage(
+                            image: NetworkImage(photoUrl),
+                            fit: BoxFit.cover,
                           ),
                         ),
                       ),
-                      Expanded(
-                        flex: 6, // 70% of space
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
-                          child: TextField(
-                            controller: textController,
-                            decoration: InputDecoration(
-                              hintText: 'Add your socials here!',
-                              hintStyle: TextStyle(
-                                color: Colors.white,
-                                fontFamily: 'Roboto',
-                                fontSize: 16,
-                                fontWeight: FontWeight.normal,
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.all(0),
-                              isDense: true,
-                            ),
-                            maxLines: 5,
-                            style: TextStyle(
+                    ),
+                    Expanded(
+                      flex: 6, // 70% of space
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
+                        child: TextField(
+                          controller: textController,
+                          decoration: InputDecoration(
+                            hintText: 'Add your socials here!',
+                            hintStyle: TextStyle(
+                              color: Colors.white,
                               fontFamily: 'Roboto',
                               fontSize: 16,
-                              color: Colors.white,
+                              fontWeight: FontWeight.normal,
                             ),
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.all(0),
+                            isDense: true,
+                          ),
+                          maxLines: 5,
+                          style: TextStyle(
+                            fontFamily: 'Roboto',
+                            fontSize: 16,
+                            color: Colors.white,
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            ElevatedButton(
-              onPressed: () async {
-                await sendSocialToServer();
-                if (!mounted) return;
-                Navigator.of(context).pop();
-              },
-              child: Text('Save'),
-            )
-          ],
-        ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await sendSocialToServer();
+              if (!mounted) return;
+              Navigator.of(context).pop();
+            },
+            child: Text('Save'),
+          )
+        ],
       ),
     );
   }
@@ -4147,7 +4165,7 @@ class _CustomAudioBoxDialogState extends State<CustomAudioBoxDialog> {
           color: Theme.of(context).colorScheme.background,
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(10.0, 5, 10, 5),
+          padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -4182,7 +4200,7 @@ class _CustomAudioBoxDialogState extends State<CustomAudioBoxDialog> {
                         stopRecording();
                       },
                       child: Container(
-                        width: 120,
+                        width: MediaQuery.of(context).size.width * 0.3,
                         height: 40,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10),
@@ -4198,12 +4216,12 @@ class _CustomAudioBoxDialogState extends State<CustomAudioBoxDialog> {
                         ),
                       ),
                     ),
-                    SizedBox(width: 10),
+                    //SizedBox(width: 10),
                     if (_pickedFilePath != null || audioFilePath.isNotEmpty)
                       GestureDetector(
                         onTap: playAudio,
                         child: Container(
-                          width: 120,
+                          width: MediaQuery.of(context).size.width * 0.3,
                           height: 40,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
@@ -4218,7 +4236,7 @@ class _CustomAudioBoxDialogState extends State<CustomAudioBoxDialog> {
               GestureDetector(
                 onTap: addBox,
                 child: Container(
-                  width: 120,
+                  width: MediaQuery.of(context).size.width * 0.3,
                   height: 40,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
