@@ -1037,38 +1037,196 @@ class _PhotoWidgetState extends State<PhotoWidget> {
           ),
         ),
 
-        Positioned(
-          left: MediaQuery.of(context).size.width * 0.02,
-          top: MediaQuery.of(context).size.height *
-              0.59, // Change alignment to top center
-          child: Text(
-            '${profile.name} ${profile.age}',
-            style: TextStyle(
-              fontFamily: 'Roboto',
-              fontSize: 40,
-              color: Colors.white,
+        // Positioned(
+        //   left: MediaQuery.of(context).size.width * 0.02,
+        //   top: MediaQuery.of(context).size.height *
+        //       0.59, // Change alignment to top center
+        //   child: Text(
+        //     '${profile.name} ${profile.age}',
+        //     style: TextStyle(
+        //       fontFamily: 'Roboto',
+        //       fontSize: 40,
+        //       color: Colors.white,
+        //     ),
+        //   ),
+        // ),
+        // Positioned(
+        //     left: MediaQuery.of(context).size.width * 0.03,
+        //     top: MediaQuery.of(context).size.height *
+        //         0.648, // Change alignment to top center
+        //     child: Text(
+        //       profile.distance,
+        //       style: TextStyle(
+        //         fontFamily: 'Roboto',
+        //         fontSize: 16,
+        //         color: Colors.white,
+        //       ),
+        //     )),
+        // Positioned(
+        //   bottom: MediaQuery.of(context).size.height * 0.01,
+        //   left: 0,
+        //   right: 0,
+        //   child: Container(
+        //     padding: EdgeInsets.all(16),
+        //     child: Row(
+        //       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        //       children: [
+        //         Expanded(
+        //           child: Center(
+        //             // Center the IconButton within the Expanded widget
+        //             child: SizedBox(
+        //               width: 50, // Width of the icon
+        //               height: 50, // Height of the icon
+        //               child: IconButton(
+        //                 icon: Image.asset('assets/icons/Retry.png'),
+        //                 onPressed: () => widget.onButtonPressed(
+        //                     widget.profile, 'reload'), // Button 1 action
+        //                 iconSize: 50,
+        //                 padding: EdgeInsets.zero, // Remove any internal padding
+        //               ),
+        //             ),
+        //           ),
+        //         ),
+        //         Expanded(
+        //           child: Center(
+        //             // Center the IconButton within the Expanded widget
+        //             child: SizedBox(
+        //               width: 50, // Width of the icon
+        //               height: 50, // Height of the icon
+        //               child: IconButton(
+        //                 icon: Image.asset('assets/icons/Reject.png'),
+        //                 onPressed: () => widget.onButtonPressed(
+        //                     widget.profile, 'reject'), // Button 1 action
+        //                 iconSize: 50,
+        //                 padding: EdgeInsets.zero, // Remove any internal padding
+        //               ),
+        //             ),
+        //           ),
+        //         ),
+        //         Expanded(
+        //           child: Center(
+        //             // Center the IconButton within the Expanded widget
+        //             child: SizedBox(
+        //               width: 50, // Width of the icon
+        //               height: 50, // Height of the icon
+        //               child: IconButton(
+        //                 icon: Image.asset('assets/icons/Like.png'),
+        //                 onPressed: () => widget.onButtonPressed(
+        //                     widget.profile, 'like'), // Button 1 action
+        //                 iconSize: 50,
+        //                 padding: EdgeInsets.zero, // Remove any internal padding
+        //               ),
+        //             ),
+        //           ),
+        //         ),
+        //         Expanded(
+        //           child: Center(
+        //             // Center the IconButton within the Expanded widget
+        //             child: SizedBox(
+        //               width: 50, // Width of the icon
+        //               height: 50, // Height of the icon
+        //               child: IconButton(
+        //                 icon: Image.asset('assets/icons/Favourite.png'),
+        //                 onPressed: () => widget.onButtonPressed(
+        //                     widget.profile, 'superlike'), // Button 1 action
+        //                 iconSize: 50,
+        //                 padding: EdgeInsets.zero, // Remove any internal padding
+        //               ),
+        //             ),
+        //           ),
+        //         ),
+        //       ],
+        //     ),
+        //   ),
+        // ),
+
+        // Positioned(
+        //   right: MediaQuery.of(context).size.width * 0.08,
+        //   top: MediaQuery.of(context).size.height * 0.60,
+        //   child: SizedBox(
+        //     width: 50,
+        //     height: 50,
+        //     child: IconButton(
+        //       icon: Image.asset('assets/icons/More_Info.png'),
+        //       onPressed: () {
+        //         Navigator.push(
+        //           context,
+        //           MaterialPageRoute(
+        //               builder: (context) =>
+        //                   MoreInfoPage(profile: widget.profile)),
+        //         );
+        //       },
+        //       iconSize: 50,
+        //       padding: EdgeInsets.zero,
+        //     ),
+        //   ),
+        // ),
+
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 20),
+          child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Align(
+                  alignment: Alignment.bottomLeft,
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.6,
+                    height: 40,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${profile.name} ${profile.age}',
+                            style: TextStyle(
+                              fontFamily: 'Roboto',
+                              fontSize: 40,
+                              color: Colors.white,
+                              height: 1.15,
+                            ),
+                          ),
+                          Text(
+                            profile.distance,
+                            style: TextStyle(
+                              fontFamily: 'Roboto',
+                              fontSize: 16,
+                              color: Colors.white,
+                              height: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: SizedBox(
+                    width: 50,
+                    height: 50,
+                    child: IconButton(
+                      icon: Image.asset('assets/icons/More_Info.png'),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  MoreInfoPage(profile: widget.profile)),
+                        );
+                      },
+                      iconSize: 50,
+                      padding: EdgeInsets.zero,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ),
-        Positioned(
-            left: MediaQuery.of(context).size.width * 0.03,
-            top: MediaQuery.of(context).size.height *
-                0.648, // Change alignment to top center
-            child: Text(
-              profile.distance,
-              style: TextStyle(
-                fontFamily: 'Roboto',
-                fontSize: 16,
-                color: Colors.white,
-              ),
-            )),
-        Positioned(
-          bottom: MediaQuery.of(context).size.height * 0.01,
-          left: 0,
-          right: 0,
-          child: Container(
-            padding: EdgeInsets.all(16),
-            child: Row(
+            SizedBox(
+              height: 20,
+            ),
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Expanded(
@@ -1136,30 +1294,8 @@ class _PhotoWidgetState extends State<PhotoWidget> {
                   ),
                 ),
               ],
-            ),
-          ),
-        ),
-
-        Positioned(
-          right: MediaQuery.of(context).size.width * 0.08,
-          top: MediaQuery.of(context).size.height * 0.60,
-          child: SizedBox(
-            width: 50,
-            height: 50,
-            child: IconButton(
-              icon: Image.asset('assets/icons/More_Info.png'),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          MoreInfoPage(profile: widget.profile)),
-                );
-              },
-              iconSize: 50,
-              padding: EdgeInsets.zero,
-            ),
-          ),
+            )
+          ]),
         ),
       ],
     );
@@ -1255,12 +1391,14 @@ class MatchBox extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('$name $age',
-                        style: TextStyle(
-                          fontFamily: 'Roboto',
-                          fontSize: 30,
-                          color: Colors.white,
-                        )),
+                    child: SingleChildScrollView(
+                      child: Text('$name $age',
+                          style: TextStyle(
+                            fontFamily: 'Roboto',
+                            fontSize: 30,
+                            color: Colors.white,
+                          )),
+                    ),
                   ),
                 ),
               ),
@@ -1337,12 +1475,14 @@ class NewMatchBox extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('$name $age',
-                        style: TextStyle(
-                          fontFamily: 'Roboto',
-                          fontSize: 30,
-                          color: Colors.white,
-                        )),
+                    child: SingleChildScrollView(
+                      child: Text('$name $age',
+                          style: TextStyle(
+                            fontFamily: 'Roboto',
+                            fontSize: 30,
+                            color: Colors.white,
+                          )),
+                    ),
                   ),
                 ),
               ),
@@ -1455,26 +1595,28 @@ class _ProfileTopBoxState extends State<ProfileTopBox> {
         padding: const EdgeInsets.fromLTRB(10, 5, 5, 10),
         child: SizedBox(
             height: 80,
-            child: Column(children: [
-              Text(
-                text1,
-                style: TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: 30,
-                  color: Colors.white,
+            child: SingleChildScrollView(
+              child: Column(children: [
+                Text(
+                  text1,
+                  style: TextStyle(
+                    fontFamily: 'Roboto',
+                    fontSize: 30,
+                    color: Colors.white,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              Text(
-                text2,
-                style: TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: 20,
-                  color: Colors.white,
+                Text(
+                  text2,
+                  style: TextStyle(
+                    fontFamily: 'Roboto',
+                    fontSize: 20,
+                    color: Colors.white,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-            ])),
+              ]),
+            )),
       ),
     );
   }
