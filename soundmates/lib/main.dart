@@ -1733,7 +1733,6 @@ class ProfilePic extends StatefulWidget {
 
 class _ProfilePicState extends State<ProfilePic> {
   final ImagePicker _picker = ImagePicker();
-  XFile? _image;
 
   Future<void> _showImagePickerOptions() async {
     showModalBottomSheet<void>(
@@ -1748,9 +1747,9 @@ class _ProfilePicState extends State<ProfilePic> {
                   final XFile? image =
                       await _picker.pickImage(source: ImageSource.gallery);
                   if (image != null) {
-                    setState(() {
-                      _image = image;
-                    });
+                    var credentials = await SecureStorage().getCredentials();
+                    var username = credentials['username'];
+                    uploadImage(image.path, username!);
                   }
                 }),
             ListTile(
@@ -1761,9 +1760,9 @@ class _ProfilePicState extends State<ProfilePic> {
                   final XFile? image =
                       await _picker.pickImage(source: ImageSource.camera);
                   if (image != null) {
-                    setState(() {
-                      _image = image;
-                    });
+                    var credentials = await SecureStorage().getCredentials();
+                    var username = credentials['username'];
+                    uploadImage(image.path, username!);
                   }
                 })
           ]);
@@ -1869,11 +1868,6 @@ class _ProfilePicState extends State<ProfilePic> {
           child: GestureDetector(
             onTap: () async {
               _showImagePickerOptions();
-              if (_image != null) {
-                var credentials = await SecureStorage().getCredentials();
-                var username = credentials['username'];
-                uploadImage(_image!.path, username!);
-              }
             },
             child: Container(
               width: 100,
@@ -2088,10 +2082,10 @@ class _MyAudioInfoboxState extends State<MyAudioInfobox> {
           _localFilePath = tempFile.path;
         });
       } else {
-        print('error downloading file');
+        return;
       }
     } catch (e) {
-      print('error downloading file');
+      return;
     }
   }
 
@@ -2101,10 +2095,8 @@ class _MyAudioInfoboxState extends State<MyAudioInfobox> {
       setState(() {
         _isPlaying = false;
       });
-      print('player initialized');
     } catch (e) {
-      print('error in initializing player');
-      print(e);
+      return;
     }
   }
 
@@ -2125,7 +2117,7 @@ class _MyAudioInfoboxState extends State<MyAudioInfobox> {
           setState(() => _isPlaying = true);
         }
       } catch (e) {
-        print(e);
+        return;
       }
     }
   }
@@ -2229,8 +2221,6 @@ class _AudioInfoBoxState extends State<AudioInfoBox> {
   }
 
   Future<void> _downloadAndStoreFile(String url) async {
-    print(url);
-
     try {
       Uri uri = Uri.parse(url);
       List<String> segments = uri.pathSegments;
@@ -2249,10 +2239,10 @@ class _AudioInfoBoxState extends State<AudioInfoBox> {
           _localFilePath = tempFile.path;
         });
       } else {
-        print('error downloading file');
+        return;
       }
     } catch (e) {
-      print('error downloading file');
+      return;
     }
   }
 
@@ -2262,10 +2252,8 @@ class _AudioInfoBoxState extends State<AudioInfoBox> {
       setState(() {
         _isPlaying = false;
       });
-      print('player initialized');
     } catch (e) {
-      print('error in initializing player');
-      print(e);
+      return;
     }
   }
 
@@ -2286,7 +2274,7 @@ class _AudioInfoBoxState extends State<AudioInfoBox> {
           setState(() => _isPlaying = true);
         }
       } catch (e) {
-        print(e);
+        return;
       }
     }
   }
@@ -3678,81 +3666,83 @@ class _CustomSocialDialogState extends State<CustomSocialDialog> {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       backgroundColor: Colors.transparent,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TipBox(
-              tip:
-                  'This is where your Matches will reach you. If you change your mind you can always change it later!'),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.primary,
-                  width: 1.0,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TipBox(
+                tip:
+                    'This is where your Matches will reach you. If you change your mind you can always change it later!'),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 1.0,
+                  ),
+                  color: Theme.of(context).colorScheme.background,
                 ),
-                color: Theme.of(context).colorScheme.background,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 4, // 30% of space
-                      child: Container(
-                        height: 150,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          image: DecorationImage(
-                            image: NetworkImage(photoUrl),
-                            fit: BoxFit.cover,
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 4, // 30% of space
+                        child: Container(
+                          height: 150,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            image: DecorationImage(
+                              image: NetworkImage(photoUrl),
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    Expanded(
-                      flex: 6, // 70% of space
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
-                        child: TextField(
-                          controller: textController,
-                          decoration: InputDecoration(
-                            hintText: 'Add your socials here!',
-                            hintStyle: TextStyle(
-                              color: Colors.white,
+                      Expanded(
+                        flex: 6, // 70% of space
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
+                          child: TextField(
+                            controller: textController,
+                            decoration: InputDecoration(
+                              hintText: 'Add your socials here!',
+                              hintStyle: TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'Roboto',
+                                fontSize: 16,
+                                fontWeight: FontWeight.normal,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.all(0),
+                              isDense: true,
+                            ),
+                            maxLines: 5,
+                            style: TextStyle(
                               fontFamily: 'Roboto',
                               fontSize: 16,
-                              fontWeight: FontWeight.normal,
+                              color: Colors.white,
                             ),
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.all(0),
-                            isDense: true,
-                          ),
-                          maxLines: 5,
-                          style: TextStyle(
-                            fontFamily: 'Roboto',
-                            fontSize: 16,
-                            color: Colors.white,
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              await sendSocialToServer();
-              if (!mounted) return;
-              Navigator.of(context).pop();
-            },
-            child: Text('Save'),
-          )
-        ],
+            ElevatedButton(
+              onPressed: () async {
+                await sendSocialToServer();
+                if (!mounted) return;
+                Navigator.of(context).pop();
+              },
+              child: Text('Save'),
+            )
+          ],
+        ),
       ),
     );
   }
@@ -4231,13 +4221,12 @@ class _CustomAudioBoxDialogState extends State<CustomAudioBoxDialog> {
         var request = http.MultipartRequest('POST', uri);
         request.fields['title'] = textController1.text;
         request.fields['username'] = username!;
-        print("yes");
+        ;
         request.files.add(await http.MultipartFile.fromPath(
           'audio',
           audioFilePath,
           contentType: MediaType('audio', 'aac'),
         ));
-        print("no");
         var response = await request.send();
         if (response.statusCode == 200) {
           widget.onBoxAdded();
@@ -4245,10 +4234,8 @@ class _CustomAudioBoxDialogState extends State<CustomAudioBoxDialog> {
           Navigator.of(context).pop();
         } else {
           showAlert('There was an error saving that box. Please try again.');
-          print(response.statusCode);
         }
       } catch (e) {
-        print(e);
         showAlert('There was an error saving that box. Please try again.');
       }
     }
