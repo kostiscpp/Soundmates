@@ -46,24 +46,18 @@ def swipe():
     # Get 6 users from database that are in acceptable range of user's location if cached users are not available
     # If cached users are available, return cached users
     username = request.args.get('username')
-    print(username)
     cur = mysql.connection.cursor()
     query = "SELECT user_id, gender , preferred_gender, location_long, location_lat FROM user WHERE username = %s"
-
-    print("got here")
     cur.execute(query, (username,))
     rv = cur.fetchall()
     if len(rv) == 0:
         cur.close()
         return jsonify({"results" :[]}), 200
     userID = rv[0][0]
-    print(userID)
     gender = rv[0][1]
     preferred_gender = rv[0][2]
     long = rv[0][3]
-    print(long)
     lat = rv[0][4]
-    print(lat)
     query =""" 
     SELECT u.user_id, u.username, u.age, u.name, u.job,
         (6371 * acos(
@@ -110,21 +104,18 @@ def swipe():
                                                               gender, preferred_gender, preferred_gender,
                                                               userID, userID))
     rv = cur.fetchall()
-    #print(rv)
     if len(rv) == 0:
         cur.execute(query + limit_by, (lat, long, lat, username, userID, userID, userID, 
                                        userID, userID, 
                                        gender, preferred_gender, preferred_gender,
                                        userID))
         rv = cur.fetchall()
-        #print(rv)
     rv = [profile_swipe(x) for x in rv] 
-    print({"results" : rv})
+    print(rv)
     return jsonify({"results" :rv}), 200
 # Helper function
 def profile_swipe(profile):
     # Get user's photos
-    print(profile)
     query = f"SELECT * FROM photo WHERE user_id = {profile[0]}"
     cur = mysql.connection.cursor()
     cur.execute(query)
@@ -178,8 +169,9 @@ def signup():
     attr = list(x for x in request.json.values())
     attr[-1] = attr[-1].lower()
     attr[-2] = attr[-2].lower()
+    if attr[-2] == 'non-binary':
+        attr[-2] = 'non binary'
     attr = tuple(attr)
-    print(attr)
     
     cur.execute("""INSERT INTO user (username, password, name, email,
   age, gender, preferred_gender, location_long, location_lat) VALUES (%s, %s, %s, %s, %s, %s, %s, 42, 42)""", attr)
@@ -277,8 +269,6 @@ def matches():
     query = ""
     results = []
     for match in rv:
-        print(match)
-        print(userID)
         if match[0] == userID:
             query_user = f"""SELECT u.username, u.name, u.age
                         FROM user u  WHERE u.user_id = {match[1]} LIMIT 1"""
@@ -306,14 +296,14 @@ def matches():
         if match[0] == userID:
             cur.execute("""UPDATE soundmates.Match SET is_new1 = 0 WHERE user1_id = %s AND user2_id = %s""", (match[0], match[1]))
             truthvalue = match[2]
-            print(1)
+
         else:
             cur.execute("""UPDATE soundmates.Match SET is_new2 = 0 WHERE user1_id = %s AND user2_id = %s""", (match[0], match[1]))
             truthvalue = match[3]
-            print(2)
+
         mysql.connection.commit()
         results.append({"username":user[0], "age" : user[2],"photoUrl":server_image + photo , "name":user[1], "socials":socials, "new":truthvalue})
-    print(results)
+
     cur.close()
     return jsonify({"answers": results})
 
@@ -337,7 +327,7 @@ def liked_you():
                     """, (userID,))
     rv = cur.fetchall()
     cur.close()
-    print(rv)
+
     return jsonify([{"username":x[0],"photo_url":x[1]} for x in rv])
 def get_user_id():
     #query the database to get the user_id
@@ -362,7 +352,7 @@ def get_profile_data():
 
     if profile_data:
         name, age, job = profile_data
-        print(name, age, job)
+
         if job is None:
             return jsonify({'nameAge': f'{name}, {age}', 'jobTitle': ''})
         else:
@@ -408,8 +398,10 @@ def upload_picture():
     username = request.form.get('username')
     if not username:
         return jsonify({'message': 'Username is required'}), 400
+    
     if file.filename == '':
         return jsonify({'message': 'No selected file'}), 400
+
     if file and allowed_file(file.filename):
         extension = file.filename.rsplit('.', 1)[1].lower()
         datee = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -420,9 +412,9 @@ def upload_picture():
         # Get the current maximum order value
         cur.execute("SELECT MAX(`order`) FROM photo WHERE user_id = (SELECT user_id FROM user WHERE username = %s)", (username,))
         max_order_result = cur.fetchone()
-        print(max_order_result)
+  
         next_order = max_order_result[0] + 1 if max_order_result and max_order_result[0] is not None else 1
-        print(next_order)
+ 
         # Insert the new photo with the next order value
         cur.execute("INSERT INTO photo (user_id, `order`, photo_url) VALUES ((SELECT user_id FROM user WHERE username = %s), %s, %s)", (username, next_order, filename))
         mysql.connection.commit()
@@ -442,14 +434,14 @@ def get_genres():
     cur = mysql.connection.cursor()
     try:
         # SQL query to fetch genres
-        cur.execute("SELECT genre FROM genre")
+        cur.execute("SELECT genre FROM genre ORDER BY genre ASC")
         genres_data = cur.fetchall()
         # Extracting genres from the query result
         genres = [genre[0] for genre in genres_data]
-        print(genres)
         return jsonify({'genres': genres})
     except Exception as e:
         # Handle any exceptions that occur
+        print(e)
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
@@ -458,35 +450,39 @@ def get_genres():
 @app.route('/api/update_genres', methods=['POST'])
 def update_genres():
     data = request.json
-    print(data)
+
     username = data.get('username')
     genres = data.get('genres')
-    print(genres)
+
     if not username or not genres:
         return jsonify({'message': 'Username and genres are required'}), 400
 
     cur = mysql.connection.cursor()
     try:
         # Delete all existing genres for the user
+
         cur.execute("DELETE FROM preference WHERE user_userid = (SELECT user_id FROM user WHERE username = %s)", (username,))
         mysql.connection.commit()
-        
+
         # Insert the new genres
         cur.execute("SELECT genre FROM genre")
         genres_data = cur.fetchall()
+
         genres_data = [genre[0] for genre in genres_data]
         for genre in genres:
             percentage = genres[genre]
-            print(genre, percentage)
+
+
             if genre not in genres_data:
                 cur.execute("INSERT INTO genre (genre) VALUES (%s)", (genre,))
                 mysql.connection.commit()
+                genres_data.append((genre,))
             cur.execute("INSERT INTO preference (user_userid, genre_genre_id, percentage) VALUES ((SELECT user_id FROM user WHERE username = %s), (SELECT genre_id FROM genre WHERE genre = %s), %s)", (username, genre, percentage))
+            
             mysql.connection.commit()
 
         return jsonify({'message': 'Genres updated successfully'}), 200
     except Exception as e:
-        print(e)
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
@@ -496,7 +492,6 @@ def update_genres():
 @app.route('/api/mysocials', methods=['GET'])
 def get_socials():
     username = request.args.get('username')
-    print(username)
     if not username:
         return jsonify({'message': 'Username is required'}), 400
     try:    
@@ -521,7 +516,6 @@ def get_socials():
         else:
             photo_url = photo_url[0]
         photo_url = server_image + photo_url
-        print(user_data, photo_url)
         if not user_data:
             user_data = ''
         else:
@@ -532,7 +526,6 @@ def get_socials():
         }
         return jsonify(social_data)
     except Exception as e:
-        print(e)
         return jsonify({'error': str(e)}), 500
 
 
@@ -543,7 +536,6 @@ def update_socials():
     data = request.json
     username = data.get('username')
     socials = data.get('socials')
-    print(username, socials)
     if (not username) or (not socials):
         return jsonify({'message': 'Username and socials are required'}), 400
 
@@ -666,7 +658,6 @@ def user_interaction():
                 mysql.connection.commit()
         return jsonify({'message': 'Interaction recorded successfully'}), 200
     except Exception as e:
-        print(e)
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
@@ -707,10 +698,8 @@ def get_liked():
                 socials = socials[0][0]
             liked_data.append({"username":user[0], "age" : user[2],"photoUrl":server_image + photo , "name":user[1], "socials":socials})
         # Format the data as needed. This is a basic example.
-        print(liked_data)
         return jsonify({'answers': liked_data})
     except Exception as e:
-        print(e)
         return jsonify({'error': str(e)}), 500
     finally:
         cur.close()
@@ -740,17 +729,16 @@ def get_infoboxes():
     finally:
         cur.close()
 
-UPLOAD_FOLDER = './audio/'
-ALLOWED_EXTENSIONS = {'aac'}  # Add or remove file types as needed
+AUPLOAD_FOLDER = './audio/'
+AALLOWED_EXTENSIONS = {'aac'}  # Add or remove file types as needed
 
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['UPLOAD_FOLDER'] = AUPLOAD_FOLDER
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+def aallowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in AALLOWED_EXTENSIONS
 #endpoint to get the sound 
 @app.route('/audio/<filename>',methods=['GET'])
 def serve_audio(filename):
-    print(filename)
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/get_audio', methods=['GET'])
@@ -767,11 +755,11 @@ def get_audio():
 #endpoint to upload sound 
 @app.route('/api/upload_audio',methods=['POST'])
 def upload_audio(): 
-    print(request.form)
+
     data = request.form
     title = data.get('title')
     username = data.get('username')
-    print(17)
+
     if not all([title, username]):
         return jsonify({'message': 'Title and username are required'}), 400
     if 'audio' not in request.files:
@@ -784,10 +772,10 @@ def upload_audio():
     cur = mysql.connection.cursor()
     cur.execute("SELECT user_id FROM user WHERE username = %s", (username,))
     user_id_result = cur.fetchone()
-    print(42)
+
     if user_id_result:
         user_id = user_id_result[0]
-        if file and allowed_file(file.filename):
+        if file and aallowed_file(file.filename):
             datee = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
             filename = username + str(datee) + '.aac'
             file_url += filename

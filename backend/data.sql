@@ -1,5 +1,14 @@
+SET FOREIGN_KEY_CHECKS = 0;
+TRUNCATE TABLE user;
+TRUNCATE TABLE box;
+TRUNCATE TABLE interaction;
+TRUNCATE TABLE soundmates.Match;
+TRUNCATE TABLE socials;
+TRUNCATE TABLE preference;
+SET FOREIGN_KEY_CHECKS = 1;
 LOAD DATA LOCAL INFILE '/u01/ece/se7/hci/Soundmates/backend/user.tsv' INTO TABLE user LINES TERMINATED BY '\n';
 LOAD DATA LOCAL INFILE '/u01/ece/se7/hci/Soundmates/backend/box.tsv' INTO TABLE box LINES TERMINATED BY '\n';
-LOAD DATA LOCAL INFILE '/u01/ece/se7/hci/Soundmates/backend/match.tsv' INTO TABLE soundmates.Match LINES TERMINATED BY '\n';
 LOAD DATA LOCAL INFILE '/u01/ece/se7/hci/Soundmates/backend/interaction.tsv' INTO TABLE interaction LINES TERMINATED BY '\n';
+LOAD DATA LOCAL INFILE '/u01/ece/se7/hci/Soundmates/backend/match.tsv' INTO TABLE soundmates.Match LINES TERMINATED BY '\n';
 LOAD DATA LOCAL INFILE '/u01/ece/se7/hci/Soundmates/backend/socials.tsv' INTO TABLE socials LINES TERMINATED BY '\n';
+LOAD DATA LOCAL INFILE '/u01/ece/se7/hci/Soundmates/backend/preferences.tsv' INTO TABLE preference LINES TERMINATED BY '\n';
