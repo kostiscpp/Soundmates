@@ -755,8 +755,13 @@ class _ProfilePageState extends State<ProfilePage> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Center(
-                          child: Text('Manage Socials',
-                              style: TextStyle(color: Colors.white)),
+                          child: Text(
+                            'Manage Socials',
+                            style: TextStyle(color: Colors.white),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
                     ),
@@ -780,8 +785,13 @@ class _ProfilePageState extends State<ProfilePage> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Center(
-                          child: Text('Change Genres',
-                              style: TextStyle(color: Colors.white)),
+                          child: Text(
+                            'Change Genres',
+                            style: TextStyle(color: Colors.white),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
                     ),
@@ -991,7 +1001,7 @@ class _PhotoWidgetState extends State<PhotoWidget> {
         ),
 
         Positioned(
-          top: 10,
+          top: MediaQuery.of(context).size.height * 0.015,
           left: 0,
           right: 0,
           child: PhotoIndicator(
@@ -1027,36 +1037,196 @@ class _PhotoWidgetState extends State<PhotoWidget> {
           ),
         ),
 
-        Positioned(
-          left: 10,
-          top: 480, // Change alignment to top center
-          child: Text(
-            '${profile.name} ${profile.age}',
-            style: TextStyle(
-              fontFamily: 'Roboto',
-              fontSize: 40,
-              color: Colors.white,
+        // Positioned(
+        //   left: MediaQuery.of(context).size.width * 0.02,
+        //   top: MediaQuery.of(context).size.height *
+        //       0.59, // Change alignment to top center
+        //   child: Text(
+        //     '${profile.name} ${profile.age}',
+        //     style: TextStyle(
+        //       fontFamily: 'Roboto',
+        //       fontSize: 40,
+        //       color: Colors.white,
+        //     ),
+        //   ),
+        // ),
+        // Positioned(
+        //     left: MediaQuery.of(context).size.width * 0.03,
+        //     top: MediaQuery.of(context).size.height *
+        //         0.648, // Change alignment to top center
+        //     child: Text(
+        //       profile.distance,
+        //       style: TextStyle(
+        //         fontFamily: 'Roboto',
+        //         fontSize: 16,
+        //         color: Colors.white,
+        //       ),
+        //     )),
+        // Positioned(
+        //   bottom: MediaQuery.of(context).size.height * 0.01,
+        //   left: 0,
+        //   right: 0,
+        //   child: Container(
+        //     padding: EdgeInsets.all(16),
+        //     child: Row(
+        //       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        //       children: [
+        //         Expanded(
+        //           child: Center(
+        //             // Center the IconButton within the Expanded widget
+        //             child: SizedBox(
+        //               width: 50, // Width of the icon
+        //               height: 50, // Height of the icon
+        //               child: IconButton(
+        //                 icon: Image.asset('assets/icons/Retry.png'),
+        //                 onPressed: () => widget.onButtonPressed(
+        //                     widget.profile, 'reload'), // Button 1 action
+        //                 iconSize: 50,
+        //                 padding: EdgeInsets.zero, // Remove any internal padding
+        //               ),
+        //             ),
+        //           ),
+        //         ),
+        //         Expanded(
+        //           child: Center(
+        //             // Center the IconButton within the Expanded widget
+        //             child: SizedBox(
+        //               width: 50, // Width of the icon
+        //               height: 50, // Height of the icon
+        //               child: IconButton(
+        //                 icon: Image.asset('assets/icons/Reject.png'),
+        //                 onPressed: () => widget.onButtonPressed(
+        //                     widget.profile, 'reject'), // Button 1 action
+        //                 iconSize: 50,
+        //                 padding: EdgeInsets.zero, // Remove any internal padding
+        //               ),
+        //             ),
+        //           ),
+        //         ),
+        //         Expanded(
+        //           child: Center(
+        //             // Center the IconButton within the Expanded widget
+        //             child: SizedBox(
+        //               width: 50, // Width of the icon
+        //               height: 50, // Height of the icon
+        //               child: IconButton(
+        //                 icon: Image.asset('assets/icons/Like.png'),
+        //                 onPressed: () => widget.onButtonPressed(
+        //                     widget.profile, 'like'), // Button 1 action
+        //                 iconSize: 50,
+        //                 padding: EdgeInsets.zero, // Remove any internal padding
+        //               ),
+        //             ),
+        //           ),
+        //         ),
+        //         Expanded(
+        //           child: Center(
+        //             // Center the IconButton within the Expanded widget
+        //             child: SizedBox(
+        //               width: 50, // Width of the icon
+        //               height: 50, // Height of the icon
+        //               child: IconButton(
+        //                 icon: Image.asset('assets/icons/Favourite.png'),
+        //                 onPressed: () => widget.onButtonPressed(
+        //                     widget.profile, 'superlike'), // Button 1 action
+        //                 iconSize: 50,
+        //                 padding: EdgeInsets.zero, // Remove any internal padding
+        //               ),
+        //             ),
+        //           ),
+        //         ),
+        //       ],
+        //     ),
+        //   ),
+        // ),
+
+        // Positioned(
+        //   right: MediaQuery.of(context).size.width * 0.08,
+        //   top: MediaQuery.of(context).size.height * 0.60,
+        //   child: SizedBox(
+        //     width: 50,
+        //     height: 50,
+        //     child: IconButton(
+        //       icon: Image.asset('assets/icons/More_Info.png'),
+        //       onPressed: () {
+        //         Navigator.push(
+        //           context,
+        //           MaterialPageRoute(
+        //               builder: (context) =>
+        //                   MoreInfoPage(profile: widget.profile)),
+        //         );
+        //       },
+        //       iconSize: 50,
+        //       padding: EdgeInsets.zero,
+        //     ),
+        //   ),
+        // ),
+
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 20),
+          child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Align(
+                  alignment: Alignment.bottomLeft,
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.6,
+                    height: 40,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${profile.name} ${profile.age}',
+                            style: TextStyle(
+                              fontFamily: 'Roboto',
+                              fontSize: 40,
+                              color: Colors.white,
+                              height: 1.15,
+                            ),
+                          ),
+                          Text(
+                            profile.distance,
+                            style: TextStyle(
+                              fontFamily: 'Roboto',
+                              fontSize: 16,
+                              color: Colors.white,
+                              height: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: SizedBox(
+                    width: 50,
+                    height: 50,
+                    child: IconButton(
+                      icon: Image.asset('assets/icons/More_Info.png'),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  MoreInfoPage(profile: widget.profile)),
+                        );
+                      },
+                      iconSize: 50,
+                      padding: EdgeInsets.zero,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ),
-        Positioned(
-            left: 10,
-            top: 530,
-            child: Text(
-              profile.distance,
-              style: TextStyle(
-                fontFamily: 'Roboto',
-                fontSize: 16,
-                color: Colors.white,
-              ),
-            )),
-        Positioned(
-          bottom: 10,
-          left: 0,
-          right: 0,
-          child: Container(
-            padding: EdgeInsets.all(16),
-            child: Row(
+            SizedBox(
+              height: 20,
+            ),
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Expanded(
@@ -1124,30 +1294,8 @@ class _PhotoWidgetState extends State<PhotoWidget> {
                   ),
                 ),
               ],
-            ),
-          ),
-        ),
-
-        Positioned(
-          right: 30,
-          top: 480,
-          child: SizedBox(
-            width: 50,
-            height: 50,
-            child: IconButton(
-              icon: Image.asset('assets/icons/More_Info.png'),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) =>
-                          MoreInfoPage(profile: widget.profile)),
-                );
-              },
-              iconSize: 50,
-              padding: EdgeInsets.zero,
-            ),
-          ),
+            )
+          ]),
         ),
       ],
     );
@@ -1243,12 +1391,14 @@ class MatchBox extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('$name $age',
-                        style: TextStyle(
-                          fontFamily: 'Roboto',
-                          fontSize: 30,
-                          color: Colors.white,
-                        )),
+                    child: SingleChildScrollView(
+                      child: Text('$name $age',
+                          style: TextStyle(
+                            fontFamily: 'Roboto',
+                            fontSize: 30,
+                            color: Colors.white,
+                          )),
+                    ),
                   ),
                 ),
               ),
@@ -1325,12 +1475,14 @@ class NewMatchBox extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(8.0, 0, 0, 0),
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('$name $age',
-                        style: TextStyle(
-                          fontFamily: 'Roboto',
-                          fontSize: 30,
-                          color: Colors.white,
-                        )),
+                    child: SingleChildScrollView(
+                      child: Text('$name $age',
+                          style: TextStyle(
+                            fontFamily: 'Roboto',
+                            fontSize: 30,
+                            color: Colors.white,
+                          )),
+                    ),
                   ),
                 ),
               ),
@@ -1443,26 +1595,28 @@ class _ProfileTopBoxState extends State<ProfileTopBox> {
         padding: const EdgeInsets.fromLTRB(10, 5, 5, 10),
         child: SizedBox(
             height: 80,
-            child: Column(children: [
-              Text(
-                text1,
-                style: TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: 30,
-                  color: Colors.white,
+            child: SingleChildScrollView(
+              child: Column(children: [
+                Text(
+                  text1,
+                  style: TextStyle(
+                    fontFamily: 'Roboto',
+                    fontSize: 30,
+                    color: Colors.white,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              Text(
-                text2,
-                style: TextStyle(
-                  fontFamily: 'Roboto',
-                  fontSize: 20,
-                  color: Colors.white,
+                Text(
+                  text2,
+                  style: TextStyle(
+                    fontFamily: 'Roboto',
+                    fontSize: 20,
+                    color: Colors.white,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-            ])),
+              ]),
+            )),
       ),
     );
   }
@@ -1579,7 +1733,6 @@ class ProfilePic extends StatefulWidget {
 
 class _ProfilePicState extends State<ProfilePic> {
   final ImagePicker _picker = ImagePicker();
-  XFile? _image;
 
   Future<void> _showImagePickerOptions() async {
     showModalBottomSheet<void>(
@@ -1594,9 +1747,9 @@ class _ProfilePicState extends State<ProfilePic> {
                   final XFile? image =
                       await _picker.pickImage(source: ImageSource.gallery);
                   if (image != null) {
-                    setState(() {
-                      _image = image;
-                    });
+                    var credentials = await SecureStorage().getCredentials();
+                    var username = credentials['username'];
+                    uploadImage(image.path, username!);
                   }
                 }),
             ListTile(
@@ -1607,9 +1760,9 @@ class _ProfilePicState extends State<ProfilePic> {
                   final XFile? image =
                       await _picker.pickImage(source: ImageSource.camera);
                   if (image != null) {
-                    setState(() {
-                      _image = image;
-                    });
+                    var credentials = await SecureStorage().getCredentials();
+                    var username = credentials['username'];
+                    uploadImage(image.path, username!);
                   }
                 })
           ]);
@@ -1715,11 +1868,6 @@ class _ProfilePicState extends State<ProfilePic> {
           child: GestureDetector(
             onTap: () async {
               _showImagePickerOptions();
-              if (_image != null) {
-                var credentials = await SecureStorage().getCredentials();
-                var username = credentials['username'];
-                uploadImage(_image!.path, username!);
-              }
             },
             child: Container(
               width: 100,
@@ -1934,10 +2082,10 @@ class _MyAudioInfoboxState extends State<MyAudioInfobox> {
           _localFilePath = tempFile.path;
         });
       } else {
-        print('error downloading file');
+        return;
       }
     } catch (e) {
-      print('error downloading file');
+      return;
     }
   }
 
@@ -1947,10 +2095,8 @@ class _MyAudioInfoboxState extends State<MyAudioInfobox> {
       setState(() {
         _isPlaying = false;
       });
-      print('player initialized');
     } catch (e) {
-      print('error in initializing player');
-      print(e);
+      return;
     }
   }
 
@@ -1971,7 +2117,7 @@ class _MyAudioInfoboxState extends State<MyAudioInfobox> {
           setState(() => _isPlaying = true);
         }
       } catch (e) {
-        print(e);
+        return;
       }
     }
   }
@@ -2075,8 +2221,6 @@ class _AudioInfoBoxState extends State<AudioInfoBox> {
   }
 
   Future<void> _downloadAndStoreFile(String url) async {
-    print(url);
-
     try {
       Uri uri = Uri.parse(url);
       List<String> segments = uri.pathSegments;
@@ -2095,10 +2239,10 @@ class _AudioInfoBoxState extends State<AudioInfoBox> {
           _localFilePath = tempFile.path;
         });
       } else {
-        print('error downloading file');
+        return;
       }
     } catch (e) {
-      print('error downloading file');
+      return;
     }
   }
 
@@ -2108,10 +2252,8 @@ class _AudioInfoBoxState extends State<AudioInfoBox> {
       setState(() {
         _isPlaying = false;
       });
-      print('player initialized');
     } catch (e) {
-      print('error in initializing player');
-      print(e);
+      return;
     }
   }
 
@@ -2132,7 +2274,7 @@ class _AudioInfoBoxState extends State<AudioInfoBox> {
           setState(() => _isPlaying = true);
         }
       } catch (e) {
-        print(e);
+        return;
       }
     }
   }
@@ -2350,7 +2492,7 @@ class TipBox extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             color: Theme.of(context).colorScheme.tertiary),
         child: Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(8),
           child: Column(
             children: [
               Text(
@@ -2370,6 +2512,7 @@ class TipBox extends StatelessWidget {
                   fontWeight: FontWeight.normal,
                   color: Colors.black,
                 ),
+                textAlign: TextAlign.justify,
               )
             ],
           ),
@@ -2745,89 +2888,91 @@ class _LoginPageState extends State<LoginPage> {
         title: Text('Login'),
         backgroundColor: Theme.of(context).colorScheme.primary,
       ),
-      body: Container(
-        margin:
-            EdgeInsets.symmetric(horizontal: 20), // Add left and right margins
-        child: Column(
-          mainAxisAlignment:
-              MainAxisAlignment.start, // Align content to the top
-          children: [
-            SizedBox(
-              height: 100,
-              width: MediaQuery.of(context).size.width,
-            ),
-            SizedBox(
+      body: SingleChildScrollView(
+        child: Container(
+          margin: EdgeInsets.symmetric(
+              horizontal: 20), // Add left and right margins
+          child: Column(
+            mainAxisAlignment:
+                MainAxisAlignment.start, // Align content to the top
+            children: [
+              SizedBox(
                 height: 100,
                 width: MediaQuery.of(context).size.width,
-                child: Align(
-                  alignment: Alignment.center,
-                  child: Text('Soundmates',
-                      style: TextStyle(
-                        fontFamily: 'Basic',
-                        fontSize: 30,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      )),
-                )),
-            SizedBox(
-                height:
-                    20), // Increase the space between the title and the text fields
-            TextField(
-              controller: usernameController,
-              decoration: InputDecoration(
-                hintText: 'Username',
               ),
-            ),
-            SizedBox(height: 10),
-            TextField(
-              controller: passwordController,
-              decoration: InputDecoration(
-                hintText: 'Password',
+              SizedBox(
+                  height: 100,
+                  width: MediaQuery.of(context).size.width,
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: Text('Soundmates',
+                        style: TextStyle(
+                          fontFamily: 'Basic',
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        )),
+                  )),
+              SizedBox(
+                  height:
+                      20), // Increase the space between the title and the text fields
+              TextField(
+                controller: usernameController,
+                decoration: InputDecoration(
+                  hintText: 'Username',
+                ),
               ),
-              obscureText: true,
-            ),
-            SizedBox(height: 50),
-            ElevatedButton(
-              onPressed: () async {
-                final currentContext = context;
+              SizedBox(height: 10),
+              TextField(
+                controller: passwordController,
+                decoration: InputDecoration(
+                  hintText: 'Password',
+                ),
+                obscureText: true,
+              ),
+              SizedBox(height: 50),
+              ElevatedButton(
+                onPressed: () async {
+                  final currentContext = context;
 
-                String? result = await sendDataToServer();
+                  String? result = await sendDataToServer();
 
-                if (result == null) {
-                  if (!mounted) return;
+                  if (result == null) {
+                    if (!mounted) return;
 
-                  Navigator.pushReplacement(
-                    currentContext,
-                    MaterialPageRoute(
-                      builder: (context) => MyHomePage(),
-                    ),
-                  );
-                } else {
-                  if (!mounted) return;
+                    Navigator.pushReplacement(
+                      currentContext,
+                      MaterialPageRoute(
+                        builder: (context) => MyHomePage(),
+                      ),
+                    );
+                  } else {
+                    if (!mounted) return;
 
-                  // Show an alert dialog
-                  showDialog(
-                    context: currentContext,
-                    builder: (context) {
-                      return AlertDialog(
-                        title: Text('Error'),
-                        content: Text(result),
-                        actions: <Widget>[
-                          TextButton(
-                            child: Text('OK'),
-                            onPressed: () {
-                              Navigator.of(context).pop(); // Close the dialog
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                }
-              },
-              child: Text('Login'),
-            ),
-          ],
+                    // Show an alert dialog
+                    showDialog(
+                      context: currentContext,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: Text('Error'),
+                          content: Text(result),
+                          actions: <Widget>[
+                            TextButton(
+                              child: Text('OK'),
+                              onPressed: () {
+                                Navigator.of(context).pop(); // Close the dialog
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  }
+                },
+                child: Text('Login'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -3128,42 +3273,78 @@ class _GenreSelectState extends State<GenreSelect> {
       appBar: AppBar(
         title: Text("Genre Selector"),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Column(
-              children: [
-                Center(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Colors.white,
-                    ),
-                    width: MediaQuery.of(context).size.width * 0.9,
-                    child: SingleChildScrollView(
-                      child: TypeAheadField<String>(
-                        textFieldConfiguration: TextFieldConfiguration(
-                          autofocus: false,
-                          style: TextStyle(color: Colors.black),
-                          decoration: InputDecoration(
-                            hintText: 'Search Genre',
-                            prefixIcon: Icon(Icons.search),
-                            filled: true,
-                            fillColor: Colors.white,
-                            hintStyle: TextStyle(color: Colors.grey),
-                          ),
+          Column(
+            children: [
+              Padding(
+                padding:
+                    EdgeInsets.all(MediaQuery.of(context).size.height * 0.01),
+                child: Column(
+                  children: [
+                    Center(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.white,
                         ),
-                        suggestionsCallback: (pattern) {
-                          return genres.where((genre) {
-                            return genre
-                                .toLowerCase()
-                                .contains(pattern.toLowerCase());
-                          }).toList();
-                        },
-                        itemBuilder: (context, suggestion) {
-                          return GestureDetector(
-                            onTap: () {
+                        width: MediaQuery.of(context).size.width * 0.9,
+                        child: SingleChildScrollView(
+                          child: TypeAheadField<String>(
+                            textFieldConfiguration: TextFieldConfiguration(
+                              autofocus: false,
+                              style: TextStyle(color: Colors.black),
+                              decoration: InputDecoration(
+                                hintText: 'Search Genre',
+                                prefixIcon: Icon(Icons.search),
+                                filled: true,
+                                fillColor: Colors.white,
+                                hintStyle: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                            suggestionsCallback: (pattern) {
+                              return genres.where((genre) {
+                                return genre
+                                    .toLowerCase()
+                                    .contains(pattern.toLowerCase());
+                              }).toList();
+                            },
+                            itemBuilder: (context, suggestion) {
+                              return GestureDetector(
+                                onTap: () {
+                                  // Handle suggestion selection here
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return CustomGenreAlert(
+                                        genre: suggestion,
+                                        onSelection: _addGenre,
+                                      );
+                                    },
+                                  );
+                                },
+                                child: Container(
+                                  color:
+                                      Colors.white, // Set the background color
+                                  child: ListTile(
+                                    title: Text(
+                                      suggestion,
+                                      style: TextStyle(
+                                        color:
+                                            Colors.black, // Set the text color
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            noItemsFoundBuilder: (context) => Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 8.0),
+                              child: Text('No Genres Found',
+                                  textAlign: TextAlign.center),
+                            ),
+                            onSuggestionSelected: (suggestion) {
                               // Handle suggestion selection here
                               showDialog(
                                 context: context,
@@ -3175,60 +3356,34 @@ class _GenreSelectState extends State<GenreSelect> {
                                 },
                               );
                             },
-                            child: Container(
-                              color: Colors.white, // Set the background color
-                              child: ListTile(
-                                title: Text(
-                                  suggestion,
-                                  style: TextStyle(
-                                    color: Colors.black, // Set the text color
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                        noItemsFoundBuilder: (context) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Text('No Genres Found',
-                              textAlign: TextAlign.center),
+                          ),
                         ),
-                        onSuggestionSelected: (suggestion) {
-                          // Handle suggestion selection here
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return CustomGenreAlert(
-                                genre: suggestion,
-                                onSelection: _addGenre,
-                              );
-                            },
-                          );
-                        },
                       ),
                     ),
-                  ),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.72,
+                      child: SingleChildScrollView(
+                          child: Column(
+                        children: selectedGenres.entries.map((entry) {
+                          return GenreBox(
+                            genre: entry.key,
+                            percentage: entry.value,
+                            onSelection: _addGenre,
+                            onDeletion: _removeGenre,
+                          );
+                        }).toList(),
+                      )),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 16),
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.72,
-                  child: SingleChildScrollView(
-                      child: Column(
-                    children: selectedGenres.entries.map((entry) {
-                      return GenreBox(
-                        genre: entry.key,
-                        percentage: entry.value,
-                        onSelection: _addGenre,
-                        onDeletion: _removeGenre,
-                      );
-                    }).toList(),
-                  )),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(0, 0, 0, 8.0),
+          Positioned(
+            left: MediaQuery.of(context).size.width * 0.15,
+            right: MediaQuery.of(context).size.width * 0.15,
+            bottom: MediaQuery.of(context).size.height * 0.01,
             child: GestureDetector(
               onTap: () async {
                 var serverres = await sendDataToServer(selectedGenres);
@@ -3241,7 +3396,7 @@ class _GenreSelectState extends State<GenreSelect> {
                 } else {}
               },
               child: Container(
-                height: 50,
+                height: MediaQuery.of(context).size.height * 0.06,
                 width: MediaQuery.of(context).size.width * 0.7,
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.secondary,
@@ -3511,14 +3666,9 @@ class _CustomSocialDialogState extends State<CustomSocialDialog> {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       backgroundColor: Colors.transparent,
-      child: Container(
-        height: 350,
-        width: MediaQuery.of(context).size.width * 0.8,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-        ),
+      child: SingleChildScrollView(
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             TipBox(
                 tip:
@@ -4071,13 +4221,12 @@ class _CustomAudioBoxDialogState extends State<CustomAudioBoxDialog> {
         var request = http.MultipartRequest('POST', uri);
         request.fields['title'] = textController1.text;
         request.fields['username'] = username!;
-        print("yes");
+        ;
         request.files.add(await http.MultipartFile.fromPath(
           'audio',
           audioFilePath,
           contentType: MediaType('audio', 'aac'),
         ));
-        print("no");
         var response = await request.send();
         if (response.statusCode == 200) {
           widget.onBoxAdded();
@@ -4085,10 +4234,8 @@ class _CustomAudioBoxDialogState extends State<CustomAudioBoxDialog> {
           Navigator.of(context).pop();
         } else {
           showAlert('There was an error saving that box. Please try again.');
-          print(response.statusCode);
         }
       } catch (e) {
-        print(e);
         showAlert('There was an error saving that box. Please try again.');
       }
     }
@@ -4147,7 +4294,7 @@ class _CustomAudioBoxDialogState extends State<CustomAudioBoxDialog> {
           color: Theme.of(context).colorScheme.background,
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(10.0, 5, 10, 5),
+          padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -4182,7 +4329,7 @@ class _CustomAudioBoxDialogState extends State<CustomAudioBoxDialog> {
                         stopRecording();
                       },
                       child: Container(
-                        width: 120,
+                        width: MediaQuery.of(context).size.width * 0.3,
                         height: 40,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10),
@@ -4198,12 +4345,12 @@ class _CustomAudioBoxDialogState extends State<CustomAudioBoxDialog> {
                         ),
                       ),
                     ),
-                    SizedBox(width: 10),
+                    //SizedBox(width: 10),
                     if (_pickedFilePath != null || audioFilePath.isNotEmpty)
                       GestureDetector(
                         onTap: playAudio,
                         child: Container(
-                          width: 120,
+                          width: MediaQuery.of(context).size.width * 0.3,
                           height: 40,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
@@ -4218,7 +4365,7 @@ class _CustomAudioBoxDialogState extends State<CustomAudioBoxDialog> {
               GestureDetector(
                 onTap: addBox,
                 child: Container(
-                  width: 120,
+                  width: MediaQuery.of(context).size.width * 0.3,
                   height: 40,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
